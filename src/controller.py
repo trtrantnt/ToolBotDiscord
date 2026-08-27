@@ -278,21 +278,32 @@ class AutoClickerController:
                     last_action_time = time.time()
                     last_scroll_time = time.time()
 
-                    # Xử lý kiểm tra trùng lặp thao tác (Backoff khi Discord đang xử lý)
+                    # Xử lý kiểm tra trùng lặp thao tác & retry khi Discord bị lag hoặc báo lỗi
                     if state == last_clicked_state:
                         consecutive_same_state_count += 1
                         if consecutive_same_state_count > self.retry_limit:
-                            self.show_alert(
-                                f"Đã click {self.retry_limit} lần nút [{name}] nhưng giao diện không chuyển đổi.\n"
-                                f"Có thể do hết thể lực hoặc Discord bị mất kết nối.",
-                                f"Cảnh báo kẹt giao diện"
-                            )
+                            if state == "ERROR":
+                                self.show_alert(
+                                    f"Phát hiện thông báo lỗi từ Discord lặp lại {self.retry_limit} lần liên tiếp.\n"
+                                    f"Có thể do hết thể lực, hết lượt đi Bí Cảnh hoặc Discord bị mất kết nối.",
+                                    "Lỗi Discord Bot"
+                                )
+                            else:
+                                self.show_alert(
+                                    f"Đã click {self.retry_limit} lần nút [{name}] nhưng giao diện không chuyển đổi.\n"
+                                    f"Có thể do hết thể lực hoặc Discord bị mất kết nối.",
+                                    "Cảnh báo kẹt giao diện"
+                                )
                             self.stop()
                             break
 
-                        # Khi Discord lag, tăng nhẹ thời gian chờ trước khi click lại (Backoff)
-                        backoff_wait = min(4.0, 1.8 + consecutive_same_state_count * 0.6)
-                        print(f"⏳ Giao diện chưa chuyển sau khi bấm [{name}], đang chờ Discord xử lý ({backoff_wait:.1f}s)...")
+                        # Khi Discord lag hoặc có lỗi, tăng nhẹ thời gian chờ trước khi thử lại (Backoff)
+                        backoff_wait = min(4.5, 2.0 + consecutive_same_state_count * 0.8)
+                        if state == "ERROR":
+                            print(f"⏳ Đang xử lý lỗi Discord (Lần {consecutive_same_state_count}/{self.retry_limit}), chờ {backoff_wait:.1f}s...")
+                        else:
+                            print(f"⏳ Giao diện chưa chuyển sau khi bấm [{name}] (Lần {consecutive_same_state_count}/{self.retry_limit}), đang chờ Discord xử lý ({backoff_wait:.1f}s)...")
+                        
                         if not self.sleep_check(backoff_wait):
                             break
                     else:
@@ -306,7 +317,7 @@ class AutoClickerController:
                     if state == "ERROR":
                         print(f"\n⚠️ {stage_str} Phát hiện thông báo lỗi của Discord. Đang click đóng lỗi...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
-                        self.sleep_check(1.5)
+                        self.sleep_check(self.delay_between_stages)
                         continue
 
                     elif state == "START":
