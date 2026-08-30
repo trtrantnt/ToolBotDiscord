@@ -1,30 +1,27 @@
-# Discord Bot Auto Clicker - Đi Bí Cảnh (Uyên Sư Muội) - OCR Edition
+# Discord Bot Auto Clicker - Đi Bí Cảnh & Auto Nhanh x10 (Uyên Sư Muội)
 
-Tool tự động hóa thao tác click trên giao diện Discord để tự động đi **Bí Cảnh** khi chơi cùng bot **Uyên Sư Muội**.
+Tool tự động hóa thao tác click trên giao diện Discord khi chơi cùng bot **Uyên Sư Muội**.
 
-Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt siêu tốc (RapidOCR - ONNX Runtime)** kết hợp điều khiển chuột (**PyAutoGUI**) để đọc trực tiếp chữ trên các nút bấm của Discord, loại bỏ hoàn toàn 100% lỗi chọn nhầm nút do trùng màu nền hoặc thay đổi giao diện.
+Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt siêu tốc (RapidOCR - ONNX Runtime)** kết hợp điều khiển chuột (**PyAutoGUI**), chia thành **2 chức năng hoàn toàn độc lập** phục vụ từng nhu cầu khác nhau.
 
 ---
 
-## 🌟 Tính năng nổi bật
+## 🌟 2 Chức năng độc lập
 
-- 🔤 **Nhận diện chữ OCR siêu chính xác (RapidOCR)**: Đọc trực tiếp nội dung văn bản trên nút bấm (`[Sinh Môn]`, `[Kinh Môn]`, `Lắng nghe tiếng sấm`, `Khai Chiến`, `Tiếp Tục`...). Không còn tình trạng click nhầm nút do cùng màu xám/xanh trên Discord!
-- 🤖 **Máy trạng thái tự thích ứng (Smart State Machine)**: Tự động nhận diện trạng thái trên màn hình Discord để điều hướng linh hoạt mà không bị lệch nhịp.
-- 🛡️ **Cơ chế chống Lag & Tự phục hồi**:
-  - **Dynamic State Polling**: Quét động liên tục, bot Discord phản hồi nhanh thì đi nhanh, lag thì chờ tự động.
-  - **Anti-Hover**: Tự động dời chuột sang vùng trống sau khi click.
-  - **Auto-Scroll**: Tự động cuộn màn hình xuống dưới nếu tin nhắn mới bị trôi khỏi tầm nhìn.
-  - **Xử lý lỗi tự động**: Tự động phát hiện thông báo lỗi của Discord (*"Tương tác này không thành công"*, *"Hết thể lực"*...).
-- 🚪 **Chọn cổng thông minh (Bát Môn)**: Tự động nhận diện các cổng xuất hiện và chọn 1 cổng theo thứ tự ưu tiên:
+### 🏰 [Chức năng 1] Tự động đi Bí Cảnh (5 Ải Bát Môn & Kỳ Ngộ)
+*Hoàn toàn độc lập, không chứa nút Nhanh x10.*
+- 🚪 **Chọn cổng Bát Môn thông minh theo thứ tự ưu tiên:**
   $$\text{Sinh} \rightarrow \text{Khai} \rightarrow \text{Hưu} \rightarrow \text{Cảnh} \rightarrow \text{Kinh} \rightarrow \text{Đỗ} \rightarrow \text{Thương} \rightarrow \text{Tử}$$
-- ⚔️ **Tự động xử lý trọn vẹn 5 Ải Bí Cảnh**:
-  - **Ải 1 (Kỳ Ngộ)**: Chọn cổng $\rightarrow$ Chọn Kỳ Ngộ (*"Lắng nghe tiếng sấm"* / *"Cẩn thận thu hái"* / *"Hứng lấy linh nhũ"*) $\rightarrow$ Ấn *Tiếp Tục*.
-  - **Ải 2 (Chiến Đấu)**: Chọn cổng $\rightarrow$ Ấn *Khai Chiến* $\rightarrow$ Chờ chiến đấu (5-10s) $\rightarrow$ Ấn *Tiếp Tục Khai Phá*.
-  - **Ải 3 (Kỳ Ngộ)**: Chọn cổng $\rightarrow$ Chọn Kỳ Ngộ $\rightarrow$ Ấn *Tiếp Tục*.
-  - **Ải 4 (Chiến Đấu)**: Chọn cổng $\rightarrow$ Ấn *Khai Chiến* $\rightarrow$ Chờ chiến đấu (5-10s) $\rightarrow$ Ấn *Tiếp Tục Khai Phá*.
-  - **Ải 5 (Chiến Đấu Cuối)**: Chọn cổng $\rightarrow$ Ấn *Khai Chiến* $\rightarrow$ Chờ chiến đấu $\rightarrow$ Ấn *Chiến Tiếp* kết thúc vòng.
-- 🔄 **Tự động lặp lại vòng bí cảnh (`auto_repeat`)**: Hoàn thành ải 5 và tự động chuyển sang vòng tiếp theo.
-- ⏹️ **Phím tắt dừng khẩn cấp**: Nhấn phím `q` bất kỳ lúc nào để dừng tool ngay lập tức.
+- 🔮 **Tự động xử lý Kỳ Ngộ (Ải 1 & Ải 3):** Nhận diện và chọn các lựa chọn (*"Lắng nghe tiếng sấm"*, *"Cẩn thận thu hái"*, *"Hứng lấy linh nhũ"*) $\rightarrow$ Ấn *Tiếp Tục*.
+- ⚔️ **Tự động xử lý Chiến Đấu (Ải 2, Ải 4, Ải 5):** Bấm *Khai Chiến* $\rightarrow$ Chờ kết quả $\rightarrow$ Ấn *Tiếp Tục Khai Phá* / *Chiến Tiếp*.
+- 🔄 **Tự động lặp lại vòng bí cảnh (`auto_repeat`)** liên tục.
+
+### ⚡ [Chức năng 2] Tự động click nút "⚡ Nhanh x10" (Tăng tốc chiến đấu)
+*Chế độ chuyên dụng độc lập.*
+- 🔍 Quét màn hình liên tục chu kỳ nhanh (0.5s).
+- 🎯 Tự động phát hiện nút **"⚡ Nhanh x10"** và click ngay lập tức kèm cơ chế **Anti-Hover** (nhấc chuột ra vùng trống để tránh đổi màu giao diện).
+- 📜 **Auto-Scroll:** Tự động cuộn trang nếu tin nhắn bị trôi khỏi màn hình.
+- 📊 Đếm số lần click thành công theo thời gian thực.
 
 ---
 
@@ -32,14 +29,14 @@ Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt si�
 
 ```text
 ToolBotDiscord/
-├── config.json               # File cấu hình từ khóa OCR & thông số hoạt động
-├── main.py                   # File khởi chạy chính của chương trình
-├── requirements.txt          # Danh sách các thư viện Python cần thiết
+├── config.json               # File cấu hình từ khóa OCR & thông số cho 2 chức năng
+├── main.py                   # File khởi chạy chính (kèm Menu chọn chế độ)
+├── requirements.txt          # Danh sách thư viện Python cần thiết
 ├── README.md                 # Tài liệu hướng dẫn sử dụng
 └── src/
     ├── __init__.py
     ├── clicker.py            # Module điều khiển chuột, Anti-Hover và Scroll
-    ├── controller.py         # Module điều khiển luồng 5 ải, xử lý lỗi & vòng lặp
+    ├── controller.py         # Chứa DungeonController (Chức năng 1) & Fast10xController (Chức năng 2)
     └── vision.py             # Module nhận diện chữ OCR (RapidOCR + mss)
 ```
 
@@ -64,39 +61,33 @@ ToolBotDiscord/
 
 ---
 
-## 🔧 Cấu hình (`config.json`)
-
-```json
-{
-    "scan_interval": 0.8,
-    "ocr_min_score": 0.6,
-    "stop_hotkey": "q",
-    "total_stages": 5,
-    "retry_limit": 4,
-    "auto_scroll_after_seconds": 6.0,
-    "max_idle_timeout": 45.0,
-    "anti_hover": true,
-    "auto_repeat": true,
-    "delay_between_stages": 2.5,
-    "delay_between_runs": 4.0
-}
-```
-
----
-
 ## 🚀 Hướng dẫn vận hành
 
-1. Mở Discord đến khung chat của bot **Uyên Sư Muội** (đảm bảo cửa sổ Discord hiển thị rõ ràng trên màn hình).
-2. Mở Terminal và chạy lệnh:
-   ```powershell
-   python main.py
-   ```
-3. Tool sẽ tự động quét chữ trên màn hình và click tuần tự các nút chính xác 100%.
-4. **Dừng bot:** Nhấn phím `q` trên bàn phím bất cứ lúc nào.
+### 1. Khởi chạy với Menu tương tác:
+```powershell
+python main.py
+```
+Giao diện Menu sẽ xuất hiện trên Terminal:
+```text
+==============================================================
+🤖 DISCORD BOT AUTO CLICKER (UYÊN SƯ MUỘI) - OCR EDITION
+==============================================================
+ [1] 🏰 Tự động đi Bí Cảnh (5 Ải Bát Môn, Kỳ Ngộ, Chiến Đấu)
+ [2] ⚡ Tự động bấm nút 'Nhanh x10' (Tăng tốc chiến đấu)
+ [0] 🛑 Thoát chương trình
+==============================================================
+👉 Vui lòng nhập lựa chọn của bạn (1 / 2 / 0): 
+```
 
----
+### 2. Khởi chạy nhanh bằng tham số dòng lệnh (Tùy chọn):
+- **Chạy trực tiếp Đi Bí Cảnh:**
+  ```powershell
+  python main.py 1
+  ```
+- **Chạy trực tiếp Auto Nhanh x10:**
+  ```powershell
+  python main.py 2
+  ```
 
-## ⚠️ Lưu ý quan trọng
-
-- **Scale màn hình:** Khuyến nghị đặt Windows Display Scaling ở mức **100%** hoặc **125%** để chữ hiển thị rõ nét nhất.
-- **Quyền Administrator:** Khuyến nghị chạy Terminal dưới quyền **Run as Administrator** để phím tắt dừng `q` luôn nhận diện được.
+### 3. Dừng tool bất kỳ lúc nào:
+- Nhấn phím **`q`** trên bàn phím để dừng ngay lập tức.

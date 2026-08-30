@@ -37,11 +37,10 @@ DEFAULT_KI_NGO_CHOICES = [
     }
 ]
 
-# Các nút hành động chính
+# Các nút hành động chính cho Chức năng 1 (Đi Bí Cảnh)
 DEFAULT_ACTION_KEYWORDS = {
     "start": ["bat dau", "start"],
     "khai_chien": ["khai chien"],
-    "nhanh_x10": ["nhanh x10", "nhanhx10", "nhanh"],
     "tiep_tuc_khai_pha": ["tiep tuc khai pha", "tiep tuc kham pha", "khai pha", "kham pha"],
     "tiep_tuc": ["tiep tuc"],
     "chien_tiep": ["chien tiep"]
@@ -56,10 +55,22 @@ DEFAULT_ERROR_KEYWORDS = [
     "khong the"
 ]
 
-class AutoClickerController:
-    def __init__(self, config):
+def show_windows_alert(message, title="Cảnh báo Bot Discord", is_error=True):
+    """Hiển thị hộp thoại cảnh báo trên Windows (MessageBoxW)"""
+    print(f"\n[ALERT] {title}: {message}")
+    flags = 0x10 if is_error else 0x40  # 0x10 = MB_ICONERROR, 0x40 = MB_ICONINFORMATION
+    try:
+        ctypes.windll.user32.MessageBoxW(0, message, title, flags | 0x10000)
+    except Exception as e:
+        print(f"Không thể hiển thị MessageBox: {e}")
+
+# ==============================================================================
+# CHỨC NĂNG 1: TỰ ĐỘNG ĐI BÍ CẢNH (5 ẢI BÁT MÔN & KỲ NGỘ) - HOÀN TOÀN KHÔNG CÓ X10
+# ==============================================================================
+class DungeonController:
+    def __init__(self, config, vision=None):
         self.config = config
-        self.vision = VisionManager()
+        self.vision = vision if vision is not None else VisionManager()
         self.clicker = ClickerManager()
         self.running = False
         
@@ -82,29 +93,15 @@ class AutoClickerController:
         self.error_keywords = config.get("error_keywords", DEFAULT_ERROR_KEYWORDS)
 
     def sleep_check(self, seconds, step=0.1):
-        """
-        Sleep có thể bị ngắt ngay lập tức khi self.running = False (người dùng bấm phím tắt dừng).
-        """
         elapsed = 0.0
         while elapsed < seconds and self.running:
             time.sleep(min(step, seconds - elapsed))
             elapsed += step
         return self.running
 
-    def show_alert(self, message, title="Cảnh báo Bí Cảnh", is_error=True):
-        """
-        Hiển thị hộp thoại cảnh báo trên Windows (MessageBoxW).
-        """
-        print(f"\n[ALERT] {title}: {message}")
-        flags = 0x10 if is_error else 0x40  # 0x10 = MB_ICONERROR, 0x40 = MB_ICONINFORMATION
-        try:
-            ctypes.windll.user32.MessageBoxW(0, message, title, flags | 0x10000)
-        except Exception as e:
-            print(f"Không thể hiển thị MessageBox: {e}")
-
     def start(self):
         print("\n" + "="*60)
-        print("🚀 BẮT ĐẦU CHẠY AUTO ĐI BÍ CẢNH - PHIÊN BẢN NHẬN DIỆN CHỮ OCR")
+        print("🚀 [CHỨC NĂNG 1] BẮT ĐẦU AUTO ĐI BÍ CẢNH (BOT UYÊN SƯ MUỘI)")
         print(f"👉 Số ải mỗi vòng: {self.total_stages}")
         print(f"👉 Thứ tự ưu tiên cổng: Sinh > Khai > Hưu > Cảnh > Kinh > Đỗ > Thương > Tử")
         print(f"🛡️ Công nghệ: Quét chữ OCR Tiếng Việt (RapidOCR), Anti-Hover, Auto-Scroll")
@@ -129,7 +126,7 @@ class AutoClickerController:
 
     def _detect_screen_state(self):
         """
-        Quét toàn diện màn hình bằng OCR và nhận diện trạng thái hiện tại.
+        Quét toàn diện màn hình bằng OCR và nhận diện trạng thái Bí Cảnh.
         Trả về tuple: (state_type, coords, display_name, raw_text)
         """
         detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
@@ -152,7 +149,6 @@ class AutoClickerController:
             return ("TIEP_TUC_KHAI_PHA", center, "Tiếp Tục Khai Phá", text_raw)
 
         # 4. Kiểm tra nút Tiếp Tục (Ải 1 & Ải 3 sau Kỳ Ngộ)
-        # Chỉ kiểm tra nếu không phải là Tiếp Tục Khai Phá
         center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("tiep_tuc", ["tiep tuc"]))
         if center:
             return ("TIEP_TUC", center, "Tiếp Tục", text_raw)
@@ -162,22 +158,17 @@ class AutoClickerController:
         if center:
             return ("KHAI_CHIEN", center, "Khai Chiến", text_raw)
 
-        # 6. Kiểm tra nút Nhanh x10 (Tăng tốc trận chiến)
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("nhanh_x10", ["nhanh x10", "nhanh"]))
-        if center:
-            return ("NHANH_X10", center, "Nhanh x10", text_raw)
-
-        # 7. Kiểm tra các nút Kỳ Ngộ (Lắng nghe tiếng sấm / Cẩn thận thu hái / Hứng lấy linh nhũ)
+        # 6. Kiểm tra các nút Kỳ Ngộ (Lắng nghe tiếng sấm / Cẩn thận thu hái / Hứng lấy linh nhũ)
         choice, center, text_raw, score = self.vision.find_ki_ngo(detected_items, self.ki_ngo_choices)
         if center and choice:
             return ("KI_NGO", center, choice["name"], text_raw)
 
-        # 8. Kiểm tra các Cổng Bát Môn theo thứ tự ưu tiên (Sinh > Khai > Hưu > Cảnh > Kinh > Đỗ > Thương > Tử)
+        # 7. Kiểm tra các Cổng Bát Môn theo thứ tự ưu tiên (Sinh > Khai > Hưu > Cảnh > Kinh > Đỗ > Thương > Tử)
         gate, center, text_raw, score = self.vision.find_gate_by_priority(detected_items, self.gate_priority)
         if center and gate:
             return ("GATE", center, gate["name"], text_raw)
 
-        # 9. Kiểm tra nút Bắt Đầu
+        # 8. Kiểm tra nút Bắt Đầu
         center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("start", ["bat dau", "start"]))
         if center:
             return ("START", center, "Bắt Đầu", text_raw)
@@ -185,10 +176,6 @@ class AutoClickerController:
         return None, None, None, None
 
     def _run_smart_state_loop(self):
-        """
-        Vòng lặp Máy Trạng Thái Tự Thích Ứng dựa trên OCR.
-        Tự động nhận diện chữ trên màn hình, tự cuộn trang khi trôi tin nhắn và tự phục hồi khi bot lag.
-        """
         run_count = 1
         current_stage = 1
         last_action_time = time.time()
@@ -205,22 +192,20 @@ class AutoClickerController:
                 state, coords, name, raw_text = self._detect_screen_state()
 
                 if state is not None:
-                    # Đã phát hiện thấy trạng thái hợp lệ trên màn hình
                     last_action_time = time.time()
                     last_scroll_time = time.time()
 
-                    # Xử lý kiểm tra trùng lặp thao tác & retry khi Discord bị lag hoặc báo lỗi
                     if state == last_clicked_state:
                         consecutive_same_state_count += 1
                         if consecutive_same_state_count > self.retry_limit:
                             if state == "ERROR":
-                                self.show_alert(
+                                show_windows_alert(
                                     f"Phát hiện thông báo lỗi từ Discord lặp lại {self.retry_limit} lần liên tiếp.\n"
                                     f"Có thể do hết thể lực, hết lượt đi Bí Cảnh hoặc Discord bị mất kết nối.",
                                     "Lỗi Discord Bot"
                                 )
                             else:
-                                self.show_alert(
+                                show_windows_alert(
                                     f"Đã click {self.retry_limit} lần nút [{name}] nhưng giao diện không chuyển đổi.\n"
                                     f"Có thể do hết thể lực hoặc Discord bị mất kết nối.",
                                     "Cảnh báo kẹt giao diện"
@@ -228,7 +213,6 @@ class AutoClickerController:
                             self.stop()
                             break
 
-                        # Khi Discord lag hoặc có lỗi, tăng nhẹ thời gian chờ trước khi thử lại (Backoff)
                         backoff_wait = min(4.5, 2.0 + consecutive_same_state_count * 0.8)
                         if state == "ERROR":
                             print(f"⏳ Đang xử lý lỗi Discord (Lần {consecutive_same_state_count}/{self.retry_limit}), chờ {backoff_wait:.1f}s...")
@@ -241,8 +225,6 @@ class AutoClickerController:
                         consecutive_same_state_count = 0
 
                     last_clicked_state = state
-
-                    # Thực hiện click hành động tương ứng với trạng thái
                     stage_str = f"[Ải {current_stage}/{self.total_stages}]"
                     
                     if state == "ERROR":
@@ -270,13 +252,7 @@ class AutoClickerController:
                     elif state == "KHAI_CHIEN":
                         print(f"\n⚔️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Khai Chiến]. Đang chờ kết quả trận đấu...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
-                        # Đợi bot xử lý chiến đấu
-                        self.sleep_check(2.0)
-
-                    elif state == "NHANH_X10":
-                        print(f"\n⚡ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Nhanh x10] tăng tốc trận chiến!")
-                        self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
-                        self.sleep_check(1.5)
+                        self.sleep_check(3.0)
 
                     elif state == "TIEP_TUC":
                         print(f"\n➡️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Tiếp Tục]. Chuẩn bị sang Ải tiếp theo...")
@@ -312,19 +288,16 @@ class AutoClickerController:
                         print(f"{'#'*60}")
 
                 else:
-                    # Không tìm thấy trạng thái nào trên màn hình hiện tại
                     idle_time = time.time() - last_action_time
                     scroll_idle_time = time.time() - last_scroll_time
 
-                    # Tự động cuộn trang xuống dưới nếu quá auto_scroll_after_seconds (trôi tin nhắn)
                     if scroll_idle_time >= self.auto_scroll_after_seconds:
                         print("📜 Đang quét tìm chữ trên màn hình... (Tự động cuộn màn hình xuống tin nhắn mới nhất)")
                         self.clicker.scroll_down(300)
                         last_scroll_time = time.time()
 
-                    # Báo lỗi nếu quá max_idle_timeout mà không thấy bất kỳ nút nào
                     if idle_time >= self.max_idle_timeout:
-                        self.show_alert(
+                        show_windows_alert(
                             f"Không nhận diện được nội dung chữ của nút nào sau {self.max_idle_timeout:.0f}s.\n"
                             f"Vui lòng kiểm tra lại cửa sổ Discord và tin nhắn của bot Uyên Sư Muội.",
                             "Hết thời gian chờ"
@@ -332,13 +305,114 @@ class AutoClickerController:
                         self.stop()
                         break
 
-                    # Nghỉ ngắn giữa các lần quét
                     if not self.sleep_check(self.scan_interval):
                         break
 
         except Exception as e:
             print(f"❌ Đã xảy ra lỗi ngoại lệ: {e}")
-            self.show_alert(f"Đã xảy ra lỗi ngoại lệ trong quá trình chạy:\n{e}", "Lỗi ngoại lệ")
+            show_windows_alert(f"Đã xảy ra lỗi ngoại lệ trong quá trình chạy:\n{e}", "Lỗi ngoại lệ")
         finally:
             self.running = False
             print("\nBot đã dừng hoạt động hoàn toàn.")
+
+# Alias để tương thích
+AutoClickerController = DungeonController
+
+# ==============================================================================
+# CHỨC NĂNG 2: AUTO CLICK "⚡ NHANH X10" (TÁCH BIỆT ĐỘC LẬP)
+# ==============================================================================
+class Fast10xController:
+    def __init__(self, config, vision=None):
+        self.config = config
+        self.vision = vision if vision is not None else VisionManager()
+        self.clicker = ClickerManager()
+        self.running = False
+        
+        fast_cfg = config.get("fast_10x", {})
+        self.scan_interval = fast_cfg.get("scan_interval", 0.5)
+        self.keywords = fast_cfg.get("keywords", ["nhanh x10", "nhanhx10", "nhanh"])
+        self.delay_after_click = fast_cfg.get("delay_after_click", 1.2)
+        
+        self.stop_hotkey = config.get("stop_hotkey", "q")
+        self.ocr_min_score = config.get("ocr_min_score", 0.6)
+        self.anti_hover = config.get("anti_hover", True)
+        self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 6.0)
+        self.error_keywords = config.get("error_keywords", DEFAULT_ERROR_KEYWORDS)
+
+    def sleep_check(self, seconds, step=0.1):
+        elapsed = 0.0
+        while elapsed < seconds and self.running:
+            time.sleep(min(step, seconds - elapsed))
+            elapsed += step
+        return self.running
+
+    def start(self):
+        print("\n" + "="*60)
+        print("⚡ [CHỨC NĂNG 2] BẮT ĐẦU AUTO CLICK 'NHANH X10' (TĂNG TỐC CHIẾN ĐẤU)")
+        print(f"👉 Từ khóa nhận diện: {self.keywords}")
+        print(f"🛡️ Tính năng: Quét OCR siêu tốc, Anti-Hover, Tự động click khi xuất hiện")
+        print(f"👉 Nhấn '{self.stop_hotkey}' bất kỳ lúc nào để DỪNG tool.")
+        print("="*60 + "\n")
+        
+        self.running = True
+        threading.Thread(target=self._hotkey_listener, daemon=True).start()
+        self._run_fast_loop()
+
+    def stop(self):
+        if self.running:
+            print("\n🛑 Đang dừng chức năng Nhanh x10...")
+            self.running = False
+
+    def _hotkey_listener(self):
+        try:
+            keyboard.wait(self.stop_hotkey)
+            self.stop()
+        except Exception as e:
+            print(f"Lỗi listener phím tắt: {e}")
+
+    def _run_fast_loop(self):
+        click_count = 0
+        last_click_time = time.time()
+        last_scroll_time = time.time()
+
+        try:
+            while self.running:
+                detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
+
+                if detected_items:
+                    # 1. Kiểm tra nếu có bảng lỗi Discord
+                    err_pos, err_score, err_text = self.vision.find_matching_text(detected_items, self.error_keywords)
+                    if err_pos:
+                        print(f"⚠️ Phát hiện bảng lỗi Discord: '{err_text}'. Đang click tắt lỗi...")
+                        self.clicker.move_and_click(err_pos[0], err_pos[1], human_like=True, move_away=self.anti_hover)
+                        self.sleep_check(1.5)
+                        continue
+
+                    # 2. Tìm nút Nhanh x10
+                    pos, score, text_raw = self.vision.find_matching_text(detected_items, self.keywords)
+                    if pos:
+                        click_count += 1
+                        last_click_time = time.time()
+                        last_scroll_time = time.time()
+                        print(f"⚡ [Lần {click_count}] OCR phát hiện: '{text_raw}' tại {pos} -> ĐÃ BẤM NÚT [NHANH X10]!")
+                        self.clicker.move_and_click(pos[0], pos[1], human_like=True, move_away=self.anti_hover)
+                        if not self.sleep_check(self.delay_after_click):
+                            break
+                        continue
+
+                # Nếu chưa thấy nút Nhanh x10
+                scroll_idle = time.time() - last_scroll_time
+                if scroll_idle >= self.auto_scroll_after_seconds:
+                    print("📜 Đang tìm nút [Nhanh x10]... (Tự động cuộn màn hình xuống dưới)")
+                    self.clicker.scroll_down(300)
+                    last_scroll_time = time.time()
+
+                if not self.sleep_check(self.scan_interval):
+                    break
+
+        except Exception as e:
+            print(f"❌ Đã xảy ra lỗi ngoại lệ: {e}")
+            show_windows_alert(f"Đã xảy ra lỗi ngoại lệ:\n{e}", "Lỗi ngoại lệ")
+        finally:
+            self.running = False
+            print(f"\nĐã dừng chức năng Nhanh x10. Tổng số lần bấm thành công: {click_count}")

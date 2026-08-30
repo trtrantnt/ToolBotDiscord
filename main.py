@@ -2,39 +2,66 @@ import json
 import os
 import sys
 
-# Đảm bảo hiển thị tốt tiếng Việt có dấu trên Windows console
+# Đảm bảo hiển thị tốt tiếng Việt có dấu và emoji trên Windows console
 if sys.platform.startswith('win'):
     try:
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
+        if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8')
+        if sys.stderr and hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8')
     except Exception:
         pass
 
-from src.controller import AutoClickerController
+from src.controller import DungeonController, Fast10xController
 
 def load_config(config_path="config.json"):
     if not os.path.exists(config_path):
         print(f"Không tìm thấy file cấu hình {config_path}. Đang sử dụng cấu hình mặc định.")
-        return {
-            "scan_interval": 0.8,
-            "ocr_min_score": 0.6,
-            "stop_hotkey": "q"
-        }
+        return {}
     
     with open(config_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
+def display_menu():
+    print("\n" + "="*62)
+    print("🤖 DISCORD BOT AUTO CLICKER (UYÊN SƯ MUỘI) - OCR EDITION")
+    print("="*62)
+    print(" [1] 🏰 Tự động đi Bí Cảnh (5 Ải Bát Môn, Kỳ Ngộ, Chiến Đấu)")
+    print(" [2] ⚡ Tự động bấm nút 'Nhanh x10' (Tăng tốc chiến đấu)")
+    print(" [0] 🛑 Thoát chương trình")
+    print("="*62)
+
 def main():
-    print("=== Discord Auto-Clicker Đi Bí Cảnh (OCR Edition) ===")
-    
-    # Load configuration
     config = load_config()
     
-    # Initialize controller
-    controller = AutoClickerController(config)
-    
-    # Start the application
-    controller.start()
+    # Kiểm tra nếu có truyền tham số dòng lệnh (vd: python main.py 1 hoặc python main.py 2)
+    choice = None
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].strip()
+        if arg in ["1", "2", "0"]:
+            choice = arg
+
+    while choice is None:
+        display_menu()
+        try:
+            user_input = input("👉 Vui lòng nhập lựa chọn của bạn (1 / 2 / 0): ").strip()
+            if user_input in ["1", "2", "0", "q", "Q"]:
+                choice = user_input.lower()
+            else:
+                print("❌ Lựa chọn không hợp lệ! Vui lòng nhập 1, 2 hoặc 0.")
+        except (KeyboardInterrupt, EOFError):
+            print("\nĐã hủy.")
+            return
+
+    if choice == "1":
+        controller = DungeonController(config)
+        controller.start()
+    elif choice == "2":
+        controller = Fast10xController(config)
+        controller.start()
+    else:
+        print("Tạm biệt!")
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

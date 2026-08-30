@@ -2,14 +2,11 @@
     "scan_interval": 0.8,
     "ocr_min_score": 0.6,
     "stop_hotkey": "q",
-    "total_stages": 5,
-    "retry_limit": 4,
-    "gate_wait_timeout": 30.0,
-    "action_wait_timeout": 30.0,
-    "auto_scroll_after_seconds": 6.0,
-    "max_idle_timeout": 45.0,
     "anti_hover": true,
     "auto_repeat": true,
+    "retry_limit": 4,
+    "auto_scroll_after_seconds": 6.0,
+    "max_idle_timeout": 45.0,
     "delay_between_stages": 2.5,
     "delay_between_runs": 4.0,
     "error_keywords": [
@@ -19,10 +16,14 @@
         "het the luc",
         "khong the"
     ],
+    "fast_10x": {
+        "scan_interval": 0.5,
+        "keywords": ["nhanh x10", "nhanhx10", "nhanh"],
+        "delay_after_click": 1.2
+    },
     "action_keywords": {
         "start": ["bat dau", "start"],
         "khai_chien": ["khai chien"],
-        "nhanh_x10": ["nhanh x10", "nhanhx10", "nhanh"],
         "tiep_tuc": ["tiep tuc"],
         "tiep_tuc_khai_pha": ["tiep tuc khai pha", "tiep tuc kham pha", "khai pha", "kham pha"],
         "chien_tiep": ["chien tiep"]
