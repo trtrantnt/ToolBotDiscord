@@ -22,6 +22,7 @@
     "action_keywords": {
         "start": ["bat dau", "start"],
         "khai_chien": ["khai chien"],
+        "nhanh_x10": ["nhanh x10", "nhanhx10", "nhanh"],
         "tiep_tuc": ["tiep tuc"],
         "tiep_tuc_khai_pha": ["tiep tuc khai pha", "tiep tuc kham pha", "khai pha", "kham pha"],
         "chien_tiep": ["chien tiep"]

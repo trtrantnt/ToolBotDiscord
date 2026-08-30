@@ -41,6 +41,7 @@ DEFAULT_KI_NGO_CHOICES = [
 DEFAULT_ACTION_KEYWORDS = {
     "start": ["bat dau", "start"],
     "khai_chien": ["khai chien"],
+    "nhanh_x10": ["nhanh x10", "nhanhx10", "nhanh"],
     "tiep_tuc_khai_pha": ["tiep tuc khai pha", "tiep tuc kham pha", "khai pha", "kham pha"],
     "tiep_tuc": ["tiep tuc"],
     "chien_tiep": ["chien tiep"]
@@ -161,17 +162,22 @@ class AutoClickerController:
         if center:
             return ("KHAI_CHIEN", center, "Khai Chiến", text_raw)
 
-        # 6. Kiểm tra các nút Kỳ Ngộ (Lắng nghe tiếng sấm / Cẩn thận thu hái / Hứng lấy linh nhũ)
+        # 6. Kiểm tra nút Nhanh x10 (Tăng tốc trận chiến)
+        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("nhanh_x10", ["nhanh x10", "nhanh"]))
+        if center:
+            return ("NHANH_X10", center, "Nhanh x10", text_raw)
+
+        # 7. Kiểm tra các nút Kỳ Ngộ (Lắng nghe tiếng sấm / Cẩn thận thu hái / Hứng lấy linh nhũ)
         choice, center, text_raw, score = self.vision.find_ki_ngo(detected_items, self.ki_ngo_choices)
         if center and choice:
             return ("KI_NGO", center, choice["name"], text_raw)
 
-        # 7. Kiểm tra các Cổng Bát Môn theo thứ tự ưu tiên (Sinh > Khai > Hưu > Cảnh > Kinh > Đỗ > Thương > Tử)
+        # 8. Kiểm tra các Cổng Bát Môn theo thứ tự ưu tiên (Sinh > Khai > Hưu > Cảnh > Kinh > Đỗ > Thương > Tử)
         gate, center, text_raw, score = self.vision.find_gate_by_priority(detected_items, self.gate_priority)
         if center and gate:
             return ("GATE", center, gate["name"], text_raw)
 
-        # 8. Kiểm tra nút Bắt Đầu
+        # 9. Kiểm tra nút Bắt Đầu
         center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("start", ["bat dau", "start"]))
         if center:
             return ("START", center, "Bắt Đầu", text_raw)
@@ -265,7 +271,12 @@ class AutoClickerController:
                         print(f"\n⚔️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Khai Chiến]. Đang chờ kết quả trận đấu...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
                         # Đợi bot xử lý chiến đấu
-                        self.sleep_check(3.0)
+                        self.sleep_check(2.0)
+
+                    elif state == "NHANH_X10":
+                        print(f"\n⚡ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Nhanh x10] tăng tốc trận chiến!")
+                        self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
+                        self.sleep_check(1.5)
 
                     elif state == "TIEP_TUC":
                         print(f"\n➡️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Tiếp Tục]. Chuẩn bị sang Ải tiếp theo...")
