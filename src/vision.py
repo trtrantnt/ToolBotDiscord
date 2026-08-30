@@ -163,6 +163,56 @@ class VisionManager:
 
         return None, 0, ""
 
+    def find_matching_button(self, detected_items, keywords, exclude_words=None, prioritize_bottom=True):
+        """
+        Tìm nút bấm chính xác, phân biệt giữa 'Nút Bấm' (button) và 'Văn Bản Hiển Thị' (embed/chat text).
+        
+        Quy tắc lọc thông minh:
+        1. Loại trừ các khối chữ chứa từ khóa của tiêu đề tin nhắn (ví dụ: 'lich luyen', 'hoan tat', 'tong phan thuong').
+        2. Kiểm tra độ dài: Nút bấm chỉ là nhãn ngắn (1-3 từ), không phải câu văn dài.
+        3. Ưu tiên nút ở dưới cùng (bottom-up): Trên Discord, các nút bấm component luôn nằm ở đáy tin nhắn.
+        """
+        if isinstance(keywords, str):
+            keywords = [keywords]
+
+        norm_keywords = [normalize_vietnamese_text(kw) for kw in keywords]
+        
+        default_excludes = [
+            "lich", "luyen", "hoan tat", "ket qua", "thong bao", 
+            "doi thu", "da thuc hien", "the luc", "tong phan thuong", 
+            "sinh menh", "diem tinh thong", "tu vi", "chien thang"
+        ]
+        if exclude_words is None:
+            exclude_words = default_excludes
+        else:
+            exclude_words = list(set(default_excludes + [normalize_vietnamese_text(w) for w in exclude_words]))
+
+        candidates = []
+        for item in detected_items:
+            t = item["text_norm"]
+            
+            # 1. Bỏ qua nếu là câu văn/nội dung tin nhắn
+            if any(ex in t for ex in exclude_words):
+                continue
+            
+            tokens = t.split()
+            for kw in norm_keywords:
+                kw_tokens = kw.split()
+                # Khớp nếu chuỗi chứa từ khóa và không phải câu văn dài (số từ <= số từ của kw + 1)
+                if is_keyword_match(t, kw) and len(tokens) <= len(kw_tokens) + 1:
+                    candidates.append(item)
+                    break
+
+        if not candidates:
+            return None, 0, ""
+
+        # Nếu có nhiều kết quả, chọn khối chữ nằm thấp nhất trên màn hình (tọa độ Y lớn nhất)
+        if prioritize_bottom:
+            candidates.sort(key=lambda c: c["center"][1], reverse=True)
+
+        best = candidates[0]
+        return best["center"], best["score"], best["text_raw"]
+
     def find_gate_by_priority(self, detected_items, gate_priority_list):
         """
         Quét danh sách khối chữ và chọn Cổng có độ ưu tiên cao nhất đang có mặt trên màn hình.

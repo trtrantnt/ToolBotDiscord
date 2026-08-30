@@ -2,7 +2,7 @@
 
 Tool tự động hóa thao tác click trên giao diện Discord khi chơi cùng bot **Uyên Sư Muội**.
 
-Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt siêu tốc (RapidOCR - ONNX Runtime)** kết hợp điều khiển chuột (**PyAutoGUI**), chia thành **2 chức năng hoàn toàn độc lập** phục vụ từng nhu cầu khác nhau.
+Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt siêu tốc (RapidOCR - ONNX Runtime)** kết hợp thuật toán **Smart Button Filtering** để phân biệt chính xác giữa nút bấm thật và chữ trong tin nhắn chat.
 
 ---
 
@@ -18,10 +18,18 @@ Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt si�
 
 ### ⚡ [Chức năng 2] Tự động click nút "⚡ Nhanh x10" (Tăng tốc chiến đấu)
 *Chế độ chuyên dụng độc lập.*
+- 🎯 **Smart Button Filtering:** Tự động phân biệt chính xác giữa **nút bấm thật `[⚡ Nhanh x10]`** ở đáy tin nhắn và **chữ tiêu đề hiển thị `Lịch Luyện Nhanh x10 Hoàn Tất!`** trong nội dung tin nhắn chat để click đúng nút 100%.
 - 🔍 Quét màn hình liên tục chu kỳ nhanh (0.5s).
-- 🎯 Tự động phát hiện nút **"⚡ Nhanh x10"** và click ngay lập tức kèm cơ chế **Anti-Hover** (nhấc chuột ra vùng trống để tránh đổi màu giao diện).
+- 🛡️ **Anti-Hover:** Tự động dời chuột sang vùng an toàn sau khi click.
 - 📜 **Auto-Scroll:** Tự động cuộn trang nếu tin nhắn bị trôi khỏi màn hình.
-- 📊 Đếm số lần click thành công theo thời gian thực.
+
+---
+
+## 🛑 Nút Dừng Tool Siêu Tiện Lợi (Stop Controls)
+
+Khi tool hoạt động, bạn có thể dừng bất cứ lúc nào bằng một trong các cách sau:
+1. **Nút bấm nổi trên màn hình (`Floating Stop Button`):** Một nút đỏ **`🛑 DỪNG TOOL [ESC / Q]`** luôn hiển thị nổi ở góc màn hình (có thể kéo thả di chuyển tùy ý). Chỉ cần click chuột vào nút này là tool dừng ngay lập tức.
+2. **Phím tắt bàn phím:** Nhấn phím **`ESC`** hoặc phím **`q`** trên bàn phím.
 
 ---
 
@@ -36,58 +44,29 @@ ToolBotDiscord/
 └── src/
     ├── __init__.py
     ├── clicker.py            # Module điều khiển chuột, Anti-Hover và Scroll
-    ├── controller.py         # Chứa DungeonController (Chức năng 1) & Fast10xController (Chức năng 2)
-    └── vision.py             # Module nhận diện chữ OCR (RapidOCR + mss)
+    ├── controller.py         # Chứa DungeonController & Fast10xController
+    ├── overlay.py            # Nút bấm nổi dừng tool trên màn hình (Floating Stop Button)
+    └── vision.py             # Module nhận diện chữ OCR & Smart Button Filtering
 ```
 
 ---
 
-## ⚙️ Cài đặt
+## ⚙️ Cài đặt & Vận hành
 
-### Yêu cầu hệ thống
-- Hệ điều hành: **Windows 10 / 11**
-- **Python 3.10+** đã được cài đặt trên máy.
+### 1. Cài đặt các thư viện cần thiết:
+```powershell
+pip install -r requirements.txt
+```
 
-### Các bước cài đặt
-
-1. **Mở Terminal / PowerShell** tại thư mục dự án:
-   ```powershell
-   cd d:\ToolBotDiscord
-   ```
-2. **Cài đặt các thư viện phụ thuộc:**
-   ```powershell
-   pip install -r requirements.txt
-   ```
-
----
-
-## 🚀 Hướng dẫn vận hành
-
-### 1. Khởi chạy với Menu tương tác:
+### 2. Khởi chạy tool:
 ```powershell
 python main.py
 ```
-Giao diện Menu sẽ xuất hiện trên Terminal:
-```text
-==============================================================
-🤖 DISCORD BOT AUTO CLICKER (UYÊN SƯ MUỘI) - OCR EDITION
-==============================================================
- [1] 🏰 Tự động đi Bí Cảnh (5 Ải Bát Môn, Kỳ Ngộ, Chiến Đấu)
- [2] ⚡ Tự động bấm nút 'Nhanh x10' (Tăng tốc chiến đấu)
- [0] 🛑 Thoát chương trình
-==============================================================
-👉 Vui lòng nhập lựa chọn của bạn (1 / 2 / 0): 
-```
+Menu tương tác sẽ xuất hiện để bạn chọn:
+- Nhập `1`: Chạy tự động đi Bí Cảnh
+- Nhập `2`: Chạy tự động bấm Nhanh x10
+- Nhập `0`: Thoát
 
-### 2. Khởi chạy nhanh bằng tham số dòng lệnh (Tùy chọn):
-- **Chạy trực tiếp Đi Bí Cảnh:**
-  ```powershell
-  python main.py 1
-  ```
-- **Chạy trực tiếp Auto Nhanh x10:**
-  ```powershell
-  python main.py 2
-  ```
-
-### 3. Dừng tool bất kỳ lúc nào:
-- Nhấn phím **`q`** trên bàn phím để dừng ngay lập tức.
+Hoặc chạy nhanh bằng lệnh:
+- `python main.py 1` (Đi Bí Cảnh)
+- `python main.py 2` (Auto Nhanh x10)

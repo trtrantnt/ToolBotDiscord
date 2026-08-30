@@ -4,6 +4,7 @@ import keyboard
 import threading
 from src.vision import VisionManager
 from src.clicker import ClickerManager
+from src.overlay import FloatingStopButton
 
 # Danh sách 8 cổng và thứ tự ưu tiên mặc định:
 # 1. Sinh -> 2. Khai -> 3. Hưu -> 4. Cảnh -> 5. Kinh -> 6. Đỗ -> 7. Thương -> 8. Tử
@@ -73,6 +74,7 @@ class DungeonController:
         self.vision = vision if vision is not None else VisionManager()
         self.clicker = ClickerManager()
         self.running = False
+        self.overlay = FloatingStopButton(on_stop_callback=self.stop)
         
         self.scan_interval = config.get("scan_interval", 0.8)
         self.ocr_min_score = config.get("ocr_min_score", 0.6)
@@ -105,10 +107,11 @@ class DungeonController:
         print(f"👉 Số ải mỗi vòng: {self.total_stages}")
         print(f"👉 Thứ tự ưu tiên cổng: Sinh > Khai > Hưu > Cảnh > Kinh > Đỗ > Thương > Tử")
         print(f"🛡️ Công nghệ: Quét chữ OCR Tiếng Việt (RapidOCR), Anti-Hover, Auto-Scroll")
-        print(f"👉 Nhấn '{self.stop_hotkey}' bất kỳ lúc nào để DỪNG tool.")
+        print(f"👉 Dừng tool: Bấm nút đỏ '🛑 DỪNG TOOL' trên màn hình hoặc nhấn phím 'q' / 'ESC'.")
         print("="*60 + "\n")
         
         self.running = True
+        self.overlay.show()
         threading.Thread(target=self._hotkey_listener, daemon=True).start()
         self._run_smart_state_loop()
 
@@ -116,11 +119,14 @@ class DungeonController:
         if self.running:
             print("\n🛑 Đang dừng Bot...")
             self.running = False
+            self.overlay.close()
 
     def _hotkey_listener(self):
         try:
-            keyboard.wait(self.stop_hotkey)
-            self.stop()
+            keyboard.add_hotkey(self.stop_hotkey, self.stop)
+            keyboard.add_hotkey("esc", self.stop)
+            while self.running:
+                time.sleep(0.2)
         except Exception as e:
             print(f"Lỗi listener phím tắt: {e}")
 
@@ -139,22 +145,22 @@ class DungeonController:
             return ("ERROR", center, f"Lỗi Discord: {text_raw}", text_raw)
 
         # 2. Kiểm tra nút Chiến Tiếp (Ưu tiên cao - kết thúc vòng)
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("chien_tiep", ["chien tiep"]))
+        center, score, text_raw = self.vision.find_matching_button(detected_items, self.action_keywords.get("chien_tiep", ["chien tiep"]))
         if center:
             return ("CHIEN_TIEP", center, "Chiến Tiếp", text_raw)
 
         # 3. Kiểm tra nút Tiếp Tục Khai Phá / Khám Phá (Ải 2 & Ải 4)
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("tiep_tuc_khai_pha", ["tiep tuc khai pha", "tiep tuc kham pha"]))
+        center, score, text_raw = self.vision.find_matching_button(detected_items, self.action_keywords.get("tiep_tuc_khai_pha", ["tiep tuc khai pha", "tiep tuc kham pha"]))
         if center:
             return ("TIEP_TUC_KHAI_PHA", center, "Tiếp Tục Khai Phá", text_raw)
 
         # 4. Kiểm tra nút Tiếp Tục (Ải 1 & Ải 3 sau Kỳ Ngộ)
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("tiep_tuc", ["tiep tuc"]))
+        center, score, text_raw = self.vision.find_matching_button(detected_items, self.action_keywords.get("tiep_tuc", ["tiep tuc"]))
         if center:
             return ("TIEP_TUC", center, "Tiếp Tục", text_raw)
 
         # 5. Kiểm tra nút Khai Chiến (Ải 2, 4, 5)
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("khai_chien", ["khai chien"]))
+        center, score, text_raw = self.vision.find_matching_button(detected_items, self.action_keywords.get("khai_chien", ["khai chien"]))
         if center:
             return ("KHAI_CHIEN", center, "Khai Chiến", text_raw)
 
@@ -169,7 +175,7 @@ class DungeonController:
             return ("GATE", center, gate["name"], text_raw)
 
         # 8. Kiểm tra nút Bắt Đầu
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.action_keywords.get("start", ["bat dau", "start"]))
+        center, score, text_raw = self.vision.find_matching_button(detected_items, self.action_keywords.get("start", ["bat dau", "start"]))
         if center:
             return ("START", center, "Bắt Đầu", text_raw)
 
@@ -234,7 +240,7 @@ class DungeonController:
                         continue
 
                     elif state == "START":
-                        print(f"\n🚀 OCR tìm thấy: '{raw_text}' -> Bấm nút [Bắt Đầu] để vào Bí Cảnh...")
+                        print(f"\n🚀 OCR tìm thấy nút: '{raw_text}' -> Bấm nút [Bắt Đầu] để vào Bí Cảnh...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
                         current_stage = 1
                         self.sleep_check(self.delay_between_stages)
@@ -250,24 +256,24 @@ class DungeonController:
                         self.sleep_check(self.delay_between_stages)
 
                     elif state == "KHAI_CHIEN":
-                        print(f"\n⚔️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Khai Chiến]. Đang chờ kết quả trận đấu...")
+                        print(f"\n⚔️ {stage_str} OCR tìm thấy nút: '{raw_text}' -> Đã bấm [Khai Chiến]. Đang chờ kết quả trận đấu...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
                         self.sleep_check(3.0)
 
                     elif state == "TIEP_TUC":
-                        print(f"\n➡️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Tiếp Tục]. Chuẩn bị sang Ải tiếp theo...")
+                        print(f"\n➡️ {stage_str} OCR tìm thấy nút: '{raw_text}' -> Đã bấm [Tiếp Tục]. Chuẩn bị sang Ải tiếp theo...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
                         current_stage = min(self.total_stages, current_stage + 1)
                         self.sleep_check(self.delay_between_stages)
 
                     elif state == "TIEP_TUC_KHAI_PHA":
-                        print(f"\n➡️ {stage_str} OCR tìm thấy: '{raw_text}' -> Đã bấm [Tiếp Tục Khai Phá]. Chuẩn bị sang Ải tiếp theo...")
+                        print(f"\n➡️ {stage_str} OCR tìm thấy nút: '{raw_text}' -> Đã bấm [Tiếp Tục Khai Phá]. Chuẩn bị sang Ải tiếp theo...")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
                         current_stage = min(self.total_stages, current_stage + 1)
                         self.sleep_check(self.delay_between_stages)
 
                     elif state == "CHIEN_TIEP":
-                        print(f"\n🏆 [Ải 5/5] OCR tìm thấy: '{raw_text}' -> Đã bấm [Chiến Tiếp] - HOÀN THÀNH XUẤT SẮC VÒNG {run_count}!")
+                        print(f"\n🏆 [Ải 5/5] OCR tìm thấy nút: '{raw_text}' -> Đã bấm [Chiến Tiếp] - HOÀN THÀNH XUẤT SẮC VÒNG {run_count}!")
                         self.clicker.move_and_click(coords[0], coords[1], human_like=True, move_away=self.anti_hover)
                         
                         run_count += 1
@@ -292,7 +298,7 @@ class DungeonController:
                     scroll_idle_time = time.time() - last_scroll_time
 
                     if scroll_idle_time >= self.auto_scroll_after_seconds:
-                        print("📜 Đang quét tìm chữ trên màn hình... (Tự động cuộn màn hình xuống tin nhắn mới nhất)")
+                        print("📜 Đang quét tìm nút trên màn hình... (Tự động cuộn màn hình xuống tin nhắn mới nhất)")
                         self.clicker.scroll_down(300)
                         last_scroll_time = time.time()
 
@@ -313,6 +319,7 @@ class DungeonController:
             show_windows_alert(f"Đã xảy ra lỗi ngoại lệ trong quá trình chạy:\n{e}", "Lỗi ngoại lệ")
         finally:
             self.running = False
+            self.overlay.close()
             print("\nBot đã dừng hoạt động hoàn toàn.")
 
 # Alias để tương thích
@@ -327,10 +334,11 @@ class Fast10xController:
         self.vision = vision if vision is not None else VisionManager()
         self.clicker = ClickerManager()
         self.running = False
+        self.overlay = FloatingStopButton(on_stop_callback=self.stop)
         
         fast_cfg = config.get("fast_10x", {})
         self.scan_interval = fast_cfg.get("scan_interval", 0.5)
-        self.keywords = fast_cfg.get("keywords", ["nhanh x10", "nhanhx10", "nhanh"])
+        self.keywords = fast_cfg.get("keywords", ["nhanh x10", "nhanhx10", "nhanh 10", "nhanh"])
         self.delay_after_click = fast_cfg.get("delay_after_click", 1.2)
         
         self.stop_hotkey = config.get("stop_hotkey", "q")
@@ -349,12 +357,13 @@ class Fast10xController:
     def start(self):
         print("\n" + "="*60)
         print("⚡ [CHỨC NĂNG 2] BẮT ĐẦU AUTO CLICK 'NHANH X10' (TĂNG TỐC CHIẾN ĐẤU)")
-        print(f"👉 Từ khóa nhận diện: {self.keywords}")
-        print(f"🛡️ Tính năng: Quét OCR siêu tốc, Anti-Hover, Tự động click khi xuất hiện")
-        print(f"👉 Nhấn '{self.stop_hotkey}' bất kỳ lúc nào để DỪNG tool.")
+        print(f"👉 Từ khóa nút: {self.keywords}")
+        print(f"🛡️ Phân biệt nút bấm: Tự động bỏ qua tiêu đề/văn bản embed thông báo kết quả")
+        print(f"👉 Dừng tool: Bấm nút đỏ '🛑 DỪNG TOOL' trên màn hình hoặc nhấn phím 'q' / 'ESC'.")
         print("="*60 + "\n")
         
         self.running = True
+        self.overlay.show()
         threading.Thread(target=self._hotkey_listener, daemon=True).start()
         self._run_fast_loop()
 
@@ -362,11 +371,14 @@ class Fast10xController:
         if self.running:
             print("\n🛑 Đang dừng chức năng Nhanh x10...")
             self.running = False
+            self.overlay.close()
 
     def _hotkey_listener(self):
         try:
-            keyboard.wait(self.stop_hotkey)
-            self.stop()
+            keyboard.add_hotkey(self.stop_hotkey, self.stop)
+            keyboard.add_hotkey("esc", self.stop)
+            while self.running:
+                time.sleep(0.2)
         except Exception as e:
             print(f"Lỗi listener phím tắt: {e}")
 
@@ -388,13 +400,18 @@ class Fast10xController:
                         self.sleep_check(1.5)
                         continue
 
-                    # 2. Tìm nút Nhanh x10
-                    pos, score, text_raw = self.vision.find_matching_text(detected_items, self.keywords)
+                    # 2. Tìm nút Nhanh x10 (sử dụng find_matching_button để lọc bỏ tiêu đề embed)
+                    pos, score, text_raw = self.vision.find_matching_button(
+                        detected_items, 
+                        self.keywords,
+                        exclude_words=["lich", "luyen", "hoan tat", "ket qua", "thong bao", "doi thu", "da thuc hien", "the luc", "tong phan thuong"],
+                        prioritize_bottom=True
+                    )
                     if pos:
                         click_count += 1
                         last_click_time = time.time()
                         last_scroll_time = time.time()
-                        print(f"⚡ [Lần {click_count}] OCR phát hiện: '{text_raw}' tại {pos} -> ĐÃ BẤM NÚT [NHANH X10]!")
+                        print(f"⚡ [Lần {click_count}] OCR phát hiện đúng NÚT BẤM: '{text_raw}' tại {pos} -> ĐÃ CLICK [NHANH X10]!")
                         self.clicker.move_and_click(pos[0], pos[1], human_like=True, move_away=self.anti_hover)
                         if not self.sleep_check(self.delay_after_click):
                             break
@@ -415,4 +432,5 @@ class Fast10xController:
             show_windows_alert(f"Đã xảy ra lỗi ngoại lệ:\n{e}", "Lỗi ngoại lệ")
         finally:
             self.running = False
+            self.overlay.close()
             print(f"\nĐã dừng chức năng Nhanh x10. Tổng số lần bấm thành công: {click_count}")
