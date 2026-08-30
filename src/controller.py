@@ -436,3 +436,119 @@ class Fast10xController:
             self.running = False
             self.overlay.close()
             print(f"\nĐã dừng chức năng Nhanh x10. Tổng số lần bấm thành công: {click_count}")
+
+# ==============================================================================
+# CHỨC NĂNG 3: AUTO CLICK NÚT TÙY CHỌN THEO TỪ KHÓA & THỜI GIAN CHỜ
+# ==============================================================================
+class CustomButtonController:
+    def __init__(self, config, button_text, delay_seconds=5.0, vision=None):
+        self.config = config
+        self.vision = vision if vision is not None else VisionManager()
+        self.clicker = ClickerManager()
+        self.running = False
+        self.overlay = FloatingStopButton(on_stop_callback=self.stop)
+        
+        self.button_text = button_text.strip()
+        try:
+            self.delay_seconds = max(0.1, float(delay_seconds))
+        except Exception:
+            self.delay_seconds = 5.0
+        
+        self.scan_interval = config.get("scan_interval", 0.6)
+        self.stop_hotkey = config.get("stop_hotkey", "q")
+        self.ocr_min_score = config.get("ocr_min_score", 0.6)
+        self.anti_hover = config.get("anti_hover", True)
+        self.enable_auto_scroll = config.get("enable_auto_scroll", False)
+        self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 15.0)
+        self.error_keywords = config.get("error_keywords", DEFAULT_ERROR_KEYWORDS)
+
+    def sleep_check(self, seconds, step=0.1):
+        elapsed = 0.0
+        while elapsed < seconds and self.running:
+            time.sleep(min(step, seconds - elapsed))
+            elapsed += step
+        return self.running
+
+    def start(self):
+        print("\n" + "="*62)
+        print("🎯 [CHỨC NĂNG 3] BẮT ĐẦU AUTO CLICK NÚT TÙY CHỌN")
+        print(f"👉 Chữ trên nút cần tìm: '{self.button_text}'")
+        print(f"⏳ Thời gian chờ giữa 2 lần bấm: {self.delay_seconds} giây")
+        print(f"🛡️ Công nghệ: Quét chữ OCR RapidOCR, Pixel-Perfect Click, Anti-Hover")
+        print(f"👉 Dừng tool: Bấm nút đỏ '🛑 DỪNG TOOL' trên màn hình hoặc nhấn phím 'q' / 'ESC'.")
+        print("="*62 + "\n")
+        
+        self.running = True
+        self.overlay.show()
+        threading.Thread(target=self._hotkey_listener, daemon=True).start()
+        self._run_custom_loop()
+
+    def stop(self):
+        if self.running:
+            print(f"\n🛑 Đang dừng chức năng click nút '{self.button_text}'...")
+            self.running = False
+            self.overlay.close()
+
+    def _hotkey_listener(self):
+        try:
+            keyboard.add_hotkey(self.stop_hotkey, self.stop)
+            keyboard.add_hotkey("esc", self.stop)
+            while self.running:
+                time.sleep(0.2)
+        except Exception as e:
+            print(f"Lỗi listener phím tắt: {e}")
+
+    def _run_custom_loop(self):
+        click_count = 0
+        last_click_time = time.time()
+        last_scroll_time = time.time()
+
+        try:
+            while self.running:
+                detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
+
+                if detected_items:
+                    # 1. Kiểm tra nếu có bảng lỗi Discord
+                    err_pos, err_score, err_text = self.vision.find_matching_text(detected_items, self.error_keywords)
+                    if err_pos:
+                        print(f"⚠️ Phát hiện bảng lỗi Discord: '{err_text}'. Đang click tắt lỗi...")
+                        self.clicker.move_and_click(err_pos[0], err_pos[1], human_like=True, move_away=self.anti_hover)
+                        self.sleep_check(1.5)
+                        continue
+
+                    # 2. Tìm nút theo chữ người dùng nhập
+                    pos, score, text_raw = self.vision.find_matching_button(
+                        detected_items, 
+                        [self.button_text],
+                        prioritize_bottom=True
+                    )
+                    if pos:
+                        click_count += 1
+                        last_click_time = time.time()
+                        last_scroll_time = time.time()
+                        print(f"🎯 [Lần {click_count}] OCR phát hiện nút: '{text_raw}' tại {pos} -> ĐÃ CLICK THÀNH CÔNG!")
+                        self.clicker.move_and_click(pos[0], pos[1], human_like=True, move_away=self.anti_hover)
+                        
+                        print(f"⏳ Đang chờ {self.delay_seconds}s trước lần bấm tiếp theo...")
+                        if not self.sleep_check(self.delay_seconds):
+                            break
+                        continue
+
+                # Nếu chưa thấy nút
+                scroll_idle = time.time() - last_scroll_time
+                if self.enable_auto_scroll and scroll_idle >= self.auto_scroll_after_seconds:
+                    print(f"📜 Đang tìm nút [{self.button_text}]... (Tự động cuộn màn hình xuống dưới)")
+                    self.clicker.scroll_down(300)
+                    last_scroll_time = time.time()
+
+                if not self.sleep_check(self.scan_interval):
+                    break
+
+        except Exception as e:
+            print(f"❌ Đã xảy ra lỗi ngoại lệ: {e}")
+            show_windows_alert(f"Đã xảy ra lỗi ngoại lệ:\n{e}", "Lỗi ngoại lệ")
+        finally:
+            self.running = False
+            self.overlay.close()
+            print(f"\nĐã dừng chức năng tùy chọn. Tổng số lần bấm nút '{self.button_text}': {click_count}")
+

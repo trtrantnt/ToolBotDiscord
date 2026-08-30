@@ -1,4 +1,4 @@
-# Discord Bot Auto Clicker - Đi Bí Cảnh & Auto Nhanh x10 (Uyên Sư Muội)
+# Discord Bot Auto Clicker (Uyên Sư Muội) - OCR Edition
 
 Tool tự động hóa thao tác click trên giao diện Discord khi chơi cùng bot **Uyên Sư Muội** (hoặc Thiên Đạo Nhân Tử).
 
@@ -6,7 +6,7 @@ Công cụ sử dụng công nghệ nhận diện ký tự quang học **OCR Ti�
 
 ---
 
-## 🌟 2 Chức năng độc lập
+## 🌟 3 Chức năng hoạt động độc lập
 
 ### 🏰 [Chức năng 1] Tự động đi Bí Cảnh (5 Ải Bát Môn & Kỳ Ngộ)
 *Hoàn toàn độc lập, không chứa nút Nhanh x10.*
@@ -21,6 +21,12 @@ Công cụ sử dụng công nghệ nhận diện ký tự quang học **OCR Ti�
 - 🎯 **Smart Button Filtering:** Tự động phân biệt chính xác giữa **nút bấm thật `[⚡ Nhanh x10]`** ở đáy tin nhắn và **chữ tiêu đề hiển thị `Lịch Luyện Nhanh x10 Hoàn Tất!`** trong nội dung tin nhắn chat để click đúng nút 100%.
 - 🔍 Quét màn hình liên tục chu kỳ nhanh (0.5s).
 - 🛡️ **Anti-Hover:** Tự động dời chuột sang vùng an toàn sau khi click.
+
+### 🎯 [Chức năng 3] Tự động bấm nút tùy chọn (Nhập chữ trên nút & thời gian chờ)
+*Chế độ tự do theo nhu cầu cá nhân.*
+- ✍️ Cho phép bạn nhập bất kỳ **chữ hiển thị trên nút** nào bạn muốn click (ví dụ: `Luyện Đan`, `Chiến Lại`, `Trồng Cây`, `Thu Hoạch`...).
+- ⏳ Cho phép bạn nhập **thời gian chờ giữa 2 lần bấm** (tính bằng giây).
+- 🔄 Tool sẽ liên tục tìm đúng nút đó trên màn hình, click chính xác và chờ đúng số giây bạn đã đặt rồi mới lặp lại.
 
 ---
 
@@ -44,45 +50,17 @@ Khi tool đang hoạt động, bạn có thể dừng bất cứ lúc nào bằn
 
 ```text
 ToolBotDiscord/
-├── config.json               # File cấu hình từ khóa OCR & thông số cho 2 chức năng
-├── main.py                   # File khởi chạy chính (kèm Menu chọn chế độ)
+├── config.json               # File cấu hình từ khóa OCR & thông số hoạt động
+├── main.py                   # File khởi chạy chính (kèm Menu chọn 3 chế độ)
 ├── requirements.txt          # Danh sách thư viện Python cần thiết
 ├── README.md                 # Tài liệu hướng dẫn sử dụng
 └── src/
     ├── __init__.py
     ├── clicker.py            # Module điều khiển chuột chính xác (Windows API)
-    ├── controller.py         # Chứa DungeonController & Fast10xController
+    ├── controller.py         # Chứa DungeonController, Fast10xController & CustomButtonController
     ├── overlay.py            # Nút bấm nổi dừng tool trên màn hình (Floating Stop Button)
     └── vision.py             # Module nhận diện chữ OCR & Smart Button Filtering
 ```
-
----
-
-## 🔧 Cấu hình chi tiết (`config.json`)
-
-```json
-{
-    "scan_interval": 0.8,
-    "ocr_min_score": 0.6,
-    "stop_hotkey": "q",
-    "anti_hover": true,
-    "auto_repeat": true,
-    "retry_limit": 4,
-    "enable_auto_scroll": false,
-    "auto_scroll_after_seconds": 15.0,
-    "delay_between_stages": 2.5,
-    "delay_between_runs": 4.0,
-    "fast_10x": {
-        "scan_interval": 0.5,
-        "keywords": ["nhanh x10", "nhanhx10", "nhanh 10", "nhanh"],
-        "delay_after_click": 1.2
-    }
-}
-```
-
-- `enable_auto_scroll`: Bật (`true`) hoặc Tắt (`false`) tự động cuộn màn hình khi không thấy nút.
-- `anti_hover`: Tự động nhấc chuột ra vùng trống sau khi click.
-- `fast_10x.scan_interval`: Tốc độ quét tìm nút Nhanh x10 (mặc định 0.5 giây).
 
 ---
 
@@ -104,11 +82,13 @@ Giao diện Menu sẽ xuất hiện trên Terminal:
 ==============================================================
  [1] 🏰 Tự động đi Bí Cảnh (5 Ải Bát Môn, Kỳ Ngộ, Chiến Đấu)
  [2] ⚡ Tự động bấm nút 'Nhanh x10' (Tăng tốc chiến đấu)
+ [3] 🎯 Tự động bấm nút tùy chọn (Nhập chữ trên nút & thời gian)
  [0] 🛑 Thoát chương trình
 ==============================================================
-👉 Vui lòng nhập lựa chọn của bạn (1 / 2 / 0): 
+👉 Vui lòng nhập lựa chọn của bạn (1 / 2 / 3 / 0): 
 ```
 
-Hoặc khởi chạy nhanh bằng lệnh trực tiếp:
+### 3. Khởi chạy nhanh bằng lệnh trực tiếp:
 - **Đi Bí Cảnh:** `python main.py 1`
 - **Auto Nhanh x10:** `python main.py 2`
+- **Nút tùy chọn:** `python main.py 3 "Luyện Đan" 5` *(Ví dụ: tìm nút "Luyện Đan" và chờ 5 giây)*
