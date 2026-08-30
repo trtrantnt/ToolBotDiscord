@@ -1,8 +1,7 @@
 {
     "scan_interval": 0.8,
-    "confidence_threshold": 0.8,
+    "ocr_min_score": 0.6,
     "stop_hotkey": "q",
-    "templates_dir": "templates",
     "total_stages": 5,
     "retry_limit": 4,
     "gate_wait_timeout": 30.0,
@@ -13,72 +12,77 @@
     "auto_repeat": true,
     "delay_between_stages": 2.5,
     "delay_between_runs": 4.0,
-    "error_templates": ["loi.png", "error.png", "actions/loi.png"],
-    "action_templates": {
-        "start": ["start.png", "bat_dau.png", "Start.png"],
-        "khai_chien": ["khai_chien.png", "KhaiChien.png", "actions/khai_chien.png"],
-        "tiep_tuc": ["tiep_tuc.png", "TiepTuc.png", "actions/tiep_tuc.png"],
-        "tiep_tuc_khai_pha": ["tiep_tuc_khai_pha.png", "tiep_tuc_kham_pha.png", "TiepTucKhaiPha.png", "TiepTucKhamPha.png", "actions/tiep_tuc_khai_pha.png"],
-        "chien_tiep": ["chien_tiep.png", "ChienTiep.png", "actions/chien_tiep.png"]
+    "error_keywords": [
+        "tuong tac nay khong thanh cong",
+        "khong thanh cong",
+        "that bai",
+        "het the luc",
+        "khong the"
+    ],
+    "action_keywords": {
+        "start": ["bat dau", "start"],
+        "khai_chien": ["khai chien"],
+        "tiep_tuc": ["tiep tuc"],
+        "tiep_tuc_khai_pha": ["tiep tuc khai pha", "tiep tuc kham pha", "khai pha", "kham pha"],
+        "chien_tiep": ["chien tiep"]
     },
     "ki_ngo_choices": [
         {
             "id": "lang_nghe_tieng_sam",
             "name": "Lắng nghe tiếng sấm",
-            "templates": ["ki_ngo/lang_nghe_tieng_sam.png", "lang_nghe_tieng_sam.png", "tieng_sam.png"]
+            "keywords": ["lang nghe tieng sam", "tieng sam", "lang nghe"]
         },
         {
             "id": "can_than_thu_hai",
             "name": "Cẩn thận thu hái",
-            "templates": ["ki_ngo/can_than_thu_hai.png", "can_than_thu_hai.png", "thu_hai.png"]
+            "keywords": ["can than thu hai", "thu hai", "can than"]
         },
         {
             "id": "hung_lay_linh_nhu",
             "name": "Hứng lấy linh nhũ",
-            "templates": ["ki_ngo/hung_lay_linh_nhu.png", "hung_lay_linh_nhu.png", "linh_nhu.png"]
+            "keywords": ["hung lay linh nhu", "hing lay linh nhu", "linh nhu"]
         }
     ],
     "gate_priority": [
         {
             "id": "sinh",
             "name": "Sinh Môn",
-            "templates": ["gates/sinh.png", "sinh.png", "gate_sinh.png", "cong_sinh.png", "Sinh.png", "Sinh Môn.png"]
+            "keywords": ["sinh mon", "sinh"]
         },
         {
             "id": "khai",
             "name": "Khai Môn",
-            "templates": ["gates/khai.png", "khai.png", "gate_khai.png", "cong_khai.png", "Khai.png", "Khai Môn.png"]
+            "keywords": ["khai mon", "khai"]
         },
         {
             "id": "huu",
             "name": "Hưu Môn",
-            "templates": ["gates/huu.png", "huu.png", "gate_huu.png", "cong_huu.png", "Hưu.png", "Hưu Môn.png"]
+            "keywords": ["huu mon", "huu"]
         },
         {
             "id": "canh",
             "name": "Cảnh Môn",
-            "templates": ["gates/canh.png", "canh.png", "gate_canh.png", "cong_canh.png", "Cảnh.png", "Cảnh Môn.png"]
+            "keywords": ["canh mon", "canh"]
         },
         {
             "id": "kinh",
             "name": "Kinh Môn",
-            "templates": ["gates/kinh.png", "kinh.png", "gate_kinh.png", "cong_kinh.png", "Kinh.png", "Kinh Môn.png"]
+            "keywords": ["kinh mon", "kinh"]
         },
         {
             "id": "do",
             "name": "Đỗ Môn",
-            "templates": ["gates/do.png", "do.png", "gate_do.png", "cong_do.png", "Đỗ.png", "Đỗ Môn.png"]
+            "keywords": ["do mon", "d mon", "do"]
         },
         {
             "id": "thuong",
             "name": "Thương Môn",
-            "templates": ["gates/thuong.png", "thuong.png", "gate_thuong.png", "cong_thuong.png", "Thương.png", "Thương Môn.png"]
+            "keywords": ["thuong mon", "thudng mon", "thuong"]
         },
         {
             "id": "tu",
             "name": "Tử Môn",
-            "templates": ["gates/tu.png", "tu.png", "gate_tu.png", "cong_tu.png", "Tử.png", "Tử Môn.png"]
+            "keywords": ["tu mon", "tu"]
         }
     ]
 }
-

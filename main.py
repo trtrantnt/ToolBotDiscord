@@ -14,19 +14,18 @@ from src.controller import AutoClickerController
 
 def load_config(config_path="config.json"):
     if not os.path.exists(config_path):
-        print(f"Config file not found at {config_path}. Using defaults.")
+        print(f"Không tìm thấy file cấu hình {config_path}. Đang sử dụng cấu hình mặc định.")
         return {
-            "scan_interval": 1.0,
-            "confidence_threshold": 0.8,
-            "stop_hotkey": "q",
-            "templates_dir": "templates"
+            "scan_interval": 0.8,
+            "ocr_min_score": 0.6,
+            "stop_hotkey": "q"
         }
     
     with open(config_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def main():
-    print("=== Discord Auto-Clicker ===")
+    print("=== Discord Auto-Clicker Đi Bí Cảnh (OCR Edition) ===")
     
     # Load configuration
     config = load_config()
@@ -34,20 +33,6 @@ def main():
     # Initialize controller
     controller = AutoClickerController(config)
     
-    # Ensure templates directory exists
-    templates_dir = config.get("templates_dir", "templates")
-    if not os.path.exists(templates_dir):
-        os.makedirs(templates_dir)
-        print(f"Created '{templates_dir}' directory.")
-        print("Please use Snipping Tool to take screenshots of the buttons you want to click,")
-        print(f"save them as .png in the '{templates_dir}' directory, and run the script again.")
-        sys.exit(0)
-        
-    if not os.listdir(templates_dir):
-        print(f"Directory '{templates_dir}' is empty.")
-        print("Please add image templates (e.g. claim_button.png) to this directory first.")
-        sys.exit(0)
-
     # Start the application
     controller.start()
 
