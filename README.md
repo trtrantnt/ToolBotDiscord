@@ -1,8 +1,8 @@
 # Discord Bot Auto Clicker - Đi Bí Cảnh & Auto Nhanh x10 (Uyên Sư Muội)
 
-Tool tự động hóa thao tác click trên giao diện Discord khi chơi cùng bot **Uyên Sư Muội**.
+Tool tự động hóa thao tác click trên giao diện Discord khi chơi cùng bot **Uyên Sư Muội** (hoặc Thiên Đạo Nhân Tử).
 
-Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt siêu tốc (RapidOCR - ONNX Runtime)** kết hợp thuật toán **Smart Button Filtering** để phân biệt chính xác giữa nút bấm thật và chữ trong tin nhắn chat.
+Công cụ sử dụng công nghệ nhận diện ký tự quang học **OCR Tiếng Việt siêu tốc (RapidOCR - ONNX Runtime)** kết hợp thuật toán **Smart Button Filtering** và điều khiển chuột qua **Windows Native API** để đảm bảo độ chính xác tuyệt đối 100% khi click nút bấm.
 
 ---
 
@@ -21,15 +21,22 @@ Công cụ sử dụng công nghệ nhận diện chữ **OCR Tiếng Việt si�
 - 🎯 **Smart Button Filtering:** Tự động phân biệt chính xác giữa **nút bấm thật `[⚡ Nhanh x10]`** ở đáy tin nhắn và **chữ tiêu đề hiển thị `Lịch Luyện Nhanh x10 Hoàn Tất!`** trong nội dung tin nhắn chat để click đúng nút 100%.
 - 🔍 Quét màn hình liên tục chu kỳ nhanh (0.5s).
 - 🛡️ **Anti-Hover:** Tự động dời chuột sang vùng an toàn sau khi click.
-- 📜 **Auto-Scroll:** Tự động cuộn trang nếu tin nhắn bị trôi khỏi màn hình.
+
+---
+
+## 🎯 Các điểm mạnh công nghệ
+
+1. **Pixel-Perfect Accuracy (Windows Native API):** Sử dụng trực tiếp `SetCursorPos` và `mouse_event` ở cấp độ hệ điều hành Windows, triệt tiêu hoàn toàn độ trễ lướt chuột và lỗi lệch tọa độ do phóng to màn hình (DPI Scaling).
+2. **Không cần chụp ảnh mẫu:** Sử dụng OCR để đọc trực tiếp chữ trên nút, không phụ thuộc vào màu nền, theme sáng/tối hay kích thước nút.
+3. **Smart Button Filtering:** Loại bỏ các đoạn văn bản trong tin nhắn chat để tránh click nhầm vào chữ hiển thị không bấm được.
 
 ---
 
 ## 🛑 Nút Dừng Tool Siêu Tiện Lợi (Stop Controls)
 
-Khi tool hoạt động, bạn có thể dừng bất cứ lúc nào bằng một trong các cách sau:
+Khi tool đang hoạt động, bạn có thể dừng bất cứ lúc nào bằng một trong hai cách:
 1. **Nút bấm nổi trên màn hình (`Floating Stop Button`):** Một nút đỏ **`🛑 DỪNG TOOL [ESC / Q]`** luôn hiển thị nổi ở góc màn hình (có thể kéo thả di chuyển tùy ý). Chỉ cần click chuột vào nút này là tool dừng ngay lập tức.
-2. **Phím tắt bàn phím:** Nhấn phím **`ESC`** hoặc phím **`q`** trên bàn phím.
+2. **Phím tắt bàn phím:** Nhấn phím **`ESC`** hoặc phím **`Q`** trên bàn phím.
 
 ---
 
@@ -43,11 +50,39 @@ ToolBotDiscord/
 ├── README.md                 # Tài liệu hướng dẫn sử dụng
 └── src/
     ├── __init__.py
-    ├── clicker.py            # Module điều khiển chuột, Anti-Hover và Scroll
+    ├── clicker.py            # Module điều khiển chuột chính xác (Windows API)
     ├── controller.py         # Chứa DungeonController & Fast10xController
     ├── overlay.py            # Nút bấm nổi dừng tool trên màn hình (Floating Stop Button)
     └── vision.py             # Module nhận diện chữ OCR & Smart Button Filtering
 ```
+
+---
+
+## 🔧 Cấu hình chi tiết (`config.json`)
+
+```json
+{
+    "scan_interval": 0.8,
+    "ocr_min_score": 0.6,
+    "stop_hotkey": "q",
+    "anti_hover": true,
+    "auto_repeat": true,
+    "retry_limit": 4,
+    "enable_auto_scroll": false,
+    "auto_scroll_after_seconds": 15.0,
+    "delay_between_stages": 2.5,
+    "delay_between_runs": 4.0,
+    "fast_10x": {
+        "scan_interval": 0.5,
+        "keywords": ["nhanh x10", "nhanhx10", "nhanh 10", "nhanh"],
+        "delay_after_click": 1.2
+    }
+}
+```
+
+- `enable_auto_scroll`: Bật (`true`) hoặc Tắt (`false`) tự động cuộn màn hình khi không thấy nút.
+- `anti_hover`: Tự động nhấc chuột ra vùng trống sau khi click.
+- `fast_10x.scan_interval`: Tốc độ quét tìm nút Nhanh x10 (mặc định 0.5 giây).
 
 ---
 
@@ -62,11 +97,18 @@ pip install -r requirements.txt
 ```powershell
 python main.py
 ```
-Menu tương tác sẽ xuất hiện để bạn chọn:
-- Nhập `1`: Chạy tự động đi Bí Cảnh
-- Nhập `2`: Chạy tự động bấm Nhanh x10
-- Nhập `0`: Thoát
+Giao diện Menu sẽ xuất hiện trên Terminal:
+```text
+==============================================================
+🤖 DISCORD BOT AUTO CLICKER (UYÊN SƯ MUỘI) - OCR EDITION
+==============================================================
+ [1] 🏰 Tự động đi Bí Cảnh (5 Ải Bát Môn, Kỳ Ngộ, Chiến Đấu)
+ [2] ⚡ Tự động bấm nút 'Nhanh x10' (Tăng tốc chiến đấu)
+ [0] 🛑 Thoát chương trình
+==============================================================
+👉 Vui lòng nhập lựa chọn của bạn (1 / 2 / 0): 
+```
 
-Hoặc chạy nhanh bằng lệnh:
-- `python main.py 1` (Đi Bí Cảnh)
-- `python main.py 2` (Auto Nhanh x10)
+Hoặc khởi chạy nhanh bằng lệnh trực tiếp:
+- **Đi Bí Cảnh:** `python main.py 1`
+- **Auto Nhanh x10:** `python main.py 2`
