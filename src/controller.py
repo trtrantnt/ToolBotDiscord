@@ -81,7 +81,8 @@ class DungeonController:
         self.stop_hotkey = config.get("stop_hotkey", "q")
         self.total_stages = config.get("total_stages", 5)
         self.retry_limit = config.get("retry_limit", 4)
-        self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 6.0)
+        self.enable_auto_scroll = config.get("enable_auto_scroll", False)
+        self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 15.0)
         self.max_idle_timeout = config.get("max_idle_timeout", 45.0)
         self.anti_hover = config.get("anti_hover", True)
         self.auto_repeat = config.get("auto_repeat", True)
@@ -297,7 +298,7 @@ class DungeonController:
                     idle_time = time.time() - last_action_time
                     scroll_idle_time = time.time() - last_scroll_time
 
-                    if scroll_idle_time >= self.auto_scroll_after_seconds:
+                    if self.enable_auto_scroll and scroll_idle_time >= self.auto_scroll_after_seconds:
                         print("📜 Đang quét tìm nút trên màn hình... (Tự động cuộn màn hình xuống tin nhắn mới nhất)")
                         self.clicker.scroll_down(300)
                         last_scroll_time = time.time()
@@ -344,7 +345,8 @@ class Fast10xController:
         self.stop_hotkey = config.get("stop_hotkey", "q")
         self.ocr_min_score = config.get("ocr_min_score", 0.6)
         self.anti_hover = config.get("anti_hover", True)
-        self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 6.0)
+        self.enable_auto_scroll = config.get("enable_auto_scroll", False)
+        self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 15.0)
         self.error_keywords = config.get("error_keywords", DEFAULT_ERROR_KEYWORDS)
 
     def sleep_check(self, seconds, step=0.1):
@@ -419,7 +421,7 @@ class Fast10xController:
 
                 # Nếu chưa thấy nút Nhanh x10
                 scroll_idle = time.time() - last_scroll_time
-                if scroll_idle >= self.auto_scroll_after_seconds:
+                if self.enable_auto_scroll and scroll_idle >= self.auto_scroll_after_seconds:
                     print("📜 Đang tìm nút [Nhanh x10]... (Tự động cuộn màn hình xuống dưới)")
                     self.clicker.scroll_down(300)
                     last_scroll_time = time.time()
