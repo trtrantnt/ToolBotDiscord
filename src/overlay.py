@@ -92,3 +92,4 @@ class FloatingStopButton:
                 self.root = None
         except Exception:
             pass
+

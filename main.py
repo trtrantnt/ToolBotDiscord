@@ -1,9 +1,18 @@
 import json
 import os
 import sys
+import ctypes
 
-# Đảm bảo hiển thị tốt tiếng Việt có dấu và emoji trên Windows console
+# Bật chế độ DPI Awareness và hỗ trợ UTF-8 cho Windows console
 if sys.platform.startswith('win'):
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2) # PROCESS_PER_MONITOR_DPI_AWARE
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
+
     try:
         if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
             sys.stdout.reconfigure(encoding='utf-8')

@@ -110,6 +110,14 @@ class VisionManager:
         if not ocr_results:
             return []
 
+        # Lấy offset của màn hình (nếu có)
+        monitor_left = 0
+        monitor_top = 0
+        if self._sct is not None and len(self._sct.monitors) > 0:
+            m = self._sct.monitors[1] if len(self._sct.monitors) > 1 else self._sct.monitors[0]
+            monitor_left = m.get("left", 0)
+            monitor_top = m.get("top", 0)
+
         detected_items = []
         for item in ocr_results:
             if not item or len(item) < 3:
@@ -129,8 +137,8 @@ class VisionManager:
             # Tính tọa độ tâm của khối chữ từ 4 đỉnh: [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
             try:
                 pts = np.array(box, dtype=np.int32)
-                center_x = int(np.mean(pts[:, 0]))
-                center_y = int(np.mean(pts[:, 1]))
+                center_x = int(np.mean(pts[:, 0])) + monitor_left
+                center_y = int(np.mean(pts[:, 1])) + monitor_top
             except Exception:
                 continue
             

@@ -1,56 +1,70 @@
 import pyautogui
 import time
 import random
+import ctypes
+import sys
+
+# Bật chế độ DPI Awareness để tọa độ click khớp 100% với độ phân giải màn hình
+if sys.platform.startswith('win'):
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2) # PROCESS_PER_MONITOR_DPI_AWARE
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 
 class ClickerManager:
     def __init__(self):
-        # Configure pyautogui safety settings
-        pyautogui.FAILSAFE = True  # Move mouse to a corner to abort
-        pyautogui.PAUSE = 0.1      # Small pause after every pyautogui call
+        pyautogui.FAILSAFE = True
+        pyautogui.PAUSE = 0.05
+        self._is_win = sys.platform.startswith('win')
 
-    def move_and_click(self, x, y, human_like=True, move_away=True):
+    def move_and_click(self, x, y, human_like=False, move_away=True):
         """
-        Moves the mouse to the specified coordinates and clicks.
-        If human_like is True, adds slight random delays and offsets.
-        If move_away is True, moves the mouse cursor away to avoid Discord hover effect.
+        Click chính xác 100% vào tâm tọa độ (x, y) bằng Windows Native API để triệt tiêu độ trễ
+        và lỗi lệch tọa độ do DPI Scaling hoặc chuột lướt chậm.
         """
-        if human_like:
-            # Thêm độ lệch ngẫu nhiên nhỏ tránh click đúng 1 pixel cố định
-            offset_x = random.randint(-4, 4)
-            offset_y = random.randint(-4, 4)
-            target_x = x + offset_x
-            target_y = y + offset_y
-            
-            # Thời gian di chuyển mượt mà
-            duration = random.uniform(0.12, 0.35)
-            pyautogui.moveTo(target_x, target_y, duration, pyautogui.easeOutQuad)
-            
-            # Nghỉ ngắn trước khi click
-            time.sleep(random.uniform(0.06, 0.14))
-            pyautogui.click()
-            
-            # Anti-Hover: Dời chuột sang vùng trống bên cạnh (tránh nút bị đổi màu hover)
-            if move_away:
-                time.sleep(random.uniform(0.05, 0.10))
-                # Di chuột sang phải hoặc trái 80-120px
-                screen_w, screen_h = pyautogui.size()
-                away_x = min(screen_w - 20, max(20, target_x + random.choice([100, 130, -100, -130])))
-                away_y = min(screen_h - 20, max(20, target_y + random.randint(-20, 20)))
-                pyautogui.moveTo(away_x, away_y, random.uniform(0.08, 0.18), pyautogui.easeOutQuad)
-        else:
-            pyautogui.click(x, y)
-            if move_away:
-                pyautogui.moveRel(100, 0, duration=0.1)
+        target_x = int(round(x))
+        target_y = int(round(y))
+
+        if self._is_win:
+            try:
+                # 1. Đặt con trỏ chuột trực tiếp và chính xác vào tâm nút
+                ctypes.windll.user32.SetCursorPos(target_x, target_y)
+                time.sleep(0.04)
+                
+                # 2. Phát tín hiệu Mouse Down & Mouse Up tại đúng điểm
+                # MOUSEEVENTF_LEFTDOWN = 0x0002, MOUSEEVENTF_LEFTUP = 0x0004
+                ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
+                time.sleep(0.04)
+                ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
+                
+                # 3. Anti-Hover: Dời chuột sang vùng an toàn bên cạnh nút (tránh đổi màu giao diện)
+                if move_away:
+                    time.sleep(0.06)
+                    # Dời chuột sang phải 120px và giữ nguyên Y để không kích hoạt hover nút khác
+                    away_x = target_x + 120
+                    away_y = target_y
+                    ctypes.windll.user32.SetCursorPos(away_x, away_y)
+                return
+            except Exception as e:
+                pass
+
+        # Fallback sang PyAutoGUI nếu không dùng Windows API
+        pyautogui.moveTo(target_x, target_y, duration=0.05)
+        pyautogui.click(target_x, target_y)
+        if move_away:
+            pyautogui.moveTo(target_x + 120, target_y, duration=0.05)
 
     def scroll_down(self, clicks=300):
         """Cuộn màn hình xuống dưới để kéo tin nhắn mới nhất vào tầm nhìn"""
         try:
             pyautogui.scroll(-clicks)
-            time.sleep(0.3)
+            time.sleep(0.2)
         except Exception as e:
             print(f"Không thể cuộn màn hình: {e}")
 
     def click_center(self):
-        """Clicks at the current mouse position"""
+        """Click tại vị trí chuột hiện tại"""
         pyautogui.click()
-
