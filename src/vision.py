@@ -111,14 +111,28 @@ class VisionManager:
             return []
 
         detected_items = []
-        for box, text, score in ocr_results:
-            if score < min_score:
+        for item in ocr_results:
+            if not item or len(item) < 3:
+                continue
+            box, text, score = item[0], item[1], item[2]
+            if not text:
+                continue
+
+            try:
+                score_val = float(score)
+            except (ValueError, TypeError):
+                score_val = 0.0
+
+            if score_val < min_score:
                 continue
             
             # Tính tọa độ tâm của khối chữ từ 4 đỉnh: [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
-            pts = np.array(box, dtype=np.int32)
-            center_x = int(np.mean(pts[:, 0]))
-            center_y = int(np.mean(pts[:, 1]))
+            try:
+                pts = np.array(box, dtype=np.int32)
+                center_x = int(np.mean(pts[:, 0]))
+                center_y = int(np.mean(pts[:, 1]))
+            except Exception:
+                continue
             
             text_norm = normalize_vietnamese_text(text)
             
@@ -127,7 +141,7 @@ class VisionManager:
                 "text_norm": text_norm,
                 "center": (center_x, center_y),
                 "box": pts,
-                "score": float(score)
+                "score": score_val
             })
 
         return detected_items
