@@ -388,44 +388,29 @@ class Fast10xController:
         click_count = 0
         last_click_time = time.time()
         last_scroll_time = time.time()
-        last_disabled_log = 0.0
 
         try:
             while self.running:
                 detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
 
                 if detected_items:
-                    # 1. Tìm nút Nhanh x10 ĐANG HOẠT ĐỘNG (only_enabled=True, loại trừ thanh kênh x < 280 và ký tự '#')
+                    # Tìm nút Nhanh x10 (tự động loại trừ thanh kênh bên trái x < 280 và ký tự '#')
                     pos, score, text_raw = self.vision.find_matching_button(
                         detected_items, 
                         self.keywords,
                         exclude_words=["lich", "luyen", "hoan tat", "ket qua", "thong bao", "doi thu", "da thuc hien", "the luc", "tong phan thuong", "luan dao", "van dap"],
                         prioritize_bottom=True,
-                        min_x=280,
-                        only_enabled=True
+                        min_x=280
                     )
                     if pos:
                         click_count += 1
                         last_click_time = time.time()
                         last_scroll_time = time.time()
-                        print(f"⚡ [Lần {click_count}] OCR phát hiện đúng NÚT BẤM (Sáng/Kích hoạt): '{text_raw}' tại {pos} -> ĐÃ CLICK [NHANH X10]!")
+                        print(f"⚡ [Lần {click_count}] OCR phát hiện đúng NÚT BẤM: '{text_raw}' tại {pos} -> ĐÃ CLICK [NHANH X10]!")
                         self.clicker.move_and_click(pos[0], pos[1], human_like=True, move_away=self.anti_hover)
                         if not self.sleep_check(self.delay_after_click):
                             break
                         continue
-                    else:
-                        # Kiểm tra xem có nút Nhanh x10 nhưng đang bị mờ/vô hiệu hóa không
-                        dis_pos, _, dis_raw = self.vision.find_matching_button(
-                            detected_items, 
-                            self.keywords,
-                            exclude_words=["lich", "luyen", "hoan tat", "ket qua", "thong bao", "doi thu", "da thuc hien", "the luc", "tong phan thuong", "luan dao", "van dap"],
-                            prioritize_bottom=True,
-                            min_x=280,
-                            only_enabled=False
-                        )
-                        if dis_pos and (time.time() - last_disabled_log >= 3.0):
-                            print(f"⏳ Phát hiện nút '{dis_raw}' nhưng đang ở trạng thái MỜ / VÔ HIỆU HÓA (Disabled). Đang chờ bot kích hoạt lại...")
-                            last_disabled_log = time.time()
 
                 # Nếu chưa thấy nút Nhanh x10
                 scroll_idle = time.time() - last_scroll_time
@@ -510,44 +495,30 @@ class CustomButtonController:
         click_count = 0
         last_click_time = time.time()
         last_scroll_time = time.time()
-        last_disabled_log = 0.0
 
         try:
             while self.running:
                 detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
 
                 if detected_items:
-                    # 1. Tìm nút theo chữ người dùng nhập ĐANG HOẠT ĐỘNG (only_enabled=True, loại trừ thanh kênh x < 280)
+                    # Tìm nút theo chữ người dùng nhập (tự động loại trừ thanh kênh bên trái x < 280 và ký tự '#')
                     pos, score, text_raw = self.vision.find_matching_button(
                         detected_items, 
                         [self.button_text],
                         prioritize_bottom=True,
-                        min_x=280,
-                        only_enabled=True
+                        min_x=280
                     )
                     if pos:
                         click_count += 1
                         last_click_time = time.time()
                         last_scroll_time = time.time()
-                        print(f"🎯 [Lần {click_count}] OCR phát hiện nút (Sáng/Kích hoạt): '{text_raw}' tại {pos} -> ĐÃ CLICK THÀNH CÔNG!")
+                        print(f"🎯 [Lần {click_count}] OCR phát hiện nút: '{text_raw}' tại {pos} -> ĐÃ CLICK THÀNH CÔNG!")
                         self.clicker.move_and_click(pos[0], pos[1], human_like=True, move_away=self.anti_hover)
                         
                         print(f"⏳ Đang chờ {self.delay_seconds}s trước lần bấm tiếp theo...")
                         if not self.sleep_check(self.delay_seconds):
                             break
                         continue
-                    else:
-                        # Kiểm tra xem có nút nhưng đang bị mờ/vô hiệu hóa không
-                        dis_pos, _, dis_raw = self.vision.find_matching_button(
-                            detected_items, 
-                            [self.button_text],
-                            prioritize_bottom=True,
-                            min_x=280,
-                            only_enabled=False
-                        )
-                        if dis_pos and (time.time() - last_disabled_log >= 3.0):
-                            print(f"⏳ Phát hiện nút '{dis_raw}' nhưng đang ở trạng thái MỜ / VÔ HIỆU HÓA (Disabled). Đang chờ mở lại...")
-                            last_disabled_log = time.time()
 
                 # Nếu chưa thấy nút
                 scroll_idle = time.time() - last_scroll_time

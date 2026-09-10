@@ -93,36 +93,6 @@ class VisionManager:
             print(f"Lỗi chụp màn hình: {e}")
             return None
 
-    def is_button_enabled(self, screenshot_bgr, box, min_brightness=190, min_ratio=0.03):
-        """
-        Kiểm tra xem nút bấm Discord có đang hoạt động (Enabled) hay bị mờ/vô hiệu hóa (Disabled).
-        Trên Discord:
-        - Nút đang bật (Enabled): Chữ màu trắng sáng rõ nét, giá trị pixel chữ > 200 (thường là 230-255).
-        - Nút bị mờ/vô hiệu hóa (Disabled): Độ mờ bị giảm còn một nửa (opacity ~0.5), chữ tối mờ,
-          không có bất kỳ pixel nào vượt quá 180-190 (tỷ lệ pixel sáng = 0%).
-        """
-        if screenshot_bgr is None or box is None:
-            return True
-
-        try:
-            pts = np.array(box, dtype=np.int32)
-            x_min = max(0, int(np.min(pts[:, 0])))
-            x_max = min(screenshot_bgr.shape[1], int(np.max(pts[:, 0])))
-            y_min = max(0, int(np.min(pts[:, 1])))
-            y_max = min(screenshot_bgr.shape[0], int(np.max(pts[:, 1])))
-
-            if x_max <= x_min or y_max <= y_min:
-                return True
-
-            roi = screenshot_bgr[y_min:y_max, x_min:x_max]
-            if roi.size == 0:
-                return True
-
-            bright_ratio = np.mean(roi > min_brightness)
-            return bool(bright_ratio >= min_ratio)
-        except Exception:
-            return True
-
     def scan_screen_text(self, min_score=0.60):
         """
         Quét toàn bộ màn hình và trả về danh sách các khối chữ nhận diện được cùng tọa độ tâm.
@@ -173,15 +143,13 @@ class VisionManager:
                 continue
             
             text_norm = normalize_vietnamese_text(text)
-            is_en = self.is_button_enabled(screenshot_bgr, pts)
             
             detected_items.append({
                 "text_raw": text,
                 "text_norm": text_norm,
                 "center": (center_x, center_y),
                 "box": pts,
-                "score": score_val,
-                "is_enabled": is_en
+                "score": score_val
             })
 
         return detected_items
@@ -203,18 +171,17 @@ class VisionManager:
 
         return None, 0, ""
 
-    def find_matching_button(self, detected_items, keywords, exclude_words=None, prioritize_bottom=True, min_x=280, only_enabled=True):
+    def find_matching_button(self, detected_items, keywords, exclude_words=None, prioritize_bottom=True, min_x=280):
         """
         Tìm nút bấm chính xác, phân biệt giữa 'Nút Bấm' (button) và 'Văn Bản Hiển Thị' (embed/chat text)
-        hoặc 'Kênh Discord' (# tên-kênh ở thanh sidebar bên trái), đồng thời lọc bỏ nút bị mờ/vô hiệu hóa (disabled).
+        hoặc 'Kênh Discord' (# tên-kênh ở thanh sidebar bên trái).
         
         Quy tắc lọc thông minh:
         1. Bỏ qua hoàn toàn tên kênh Discord (bắt đầu bằng '#' hoặc chứa '#').
         2. Bỏ qua thanh sidebar danh sách server và kênh Discord ở mép trái màn hình (x < min_x).
-        3. Loại trừ các khối chữ chứa từ khóa của tiêu đề/nội dung tin nhắn và tên kênh phổ biến.
-        4. Bỏ qua nếu nút đang bị mờ/vô hiệu hóa (disabled) khi only_enabled=True.
-        5. Kiểm tra độ dài: Nút bấm chỉ là nhãn ngắn (1-3 từ), không phải câu văn dài.
-        6. Ưu tiên nút ở dưới cùng (bottom-up): Trên Discord, các nút bấm component luôn nằm ở đáy tin nhắn.
+        3. Loại trừ các khối chữ chứa từ khóa của tiêu đề/nội dung tin nhắn và tên kênh phổ biến (ví dụ: 'lich luyen', 'hoan tat', 'luan dao', 'van dap').
+        4. Kiểm tra độ dài: Nút bấm chỉ là nhãn ngắn (1-3 từ), không phải câu văn dài.
+        5. Ưu tiên nút ở dưới cùng (bottom-up): Trên Discord, các nút bấm component luôn nằm ở đáy tin nhắn.
         """
         if isinstance(keywords, str):
             keywords = [keywords]
@@ -248,10 +215,6 @@ class VisionManager:
             
             # 3. Bỏ qua nếu là câu văn/nội dung tin nhắn hoặc kênh chat
             if any(ex in t for ex in exclude_words):
-                continue
-
-            # 4. Bỏ qua nếu nút đang bị mờ/vô hiệu hóa (disabled)
-            if only_enabled and not item.get("is_enabled", True):
                 continue
             
             tokens = t.split()
