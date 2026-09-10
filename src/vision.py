@@ -171,14 +171,17 @@ class VisionManager:
 
         return None, 0, ""
 
-    def find_matching_button(self, detected_items, keywords, exclude_words=None, prioritize_bottom=True):
+    def find_matching_button(self, detected_items, keywords, exclude_words=None, prioritize_bottom=True, min_x=280):
         """
-        Tìm nút bấm chính xác, phân biệt giữa 'Nút Bấm' (button) và 'Văn Bản Hiển Thị' (embed/chat text).
+        Tìm nút bấm chính xác, phân biệt giữa 'Nút Bấm' (button) và 'Văn Bản Hiển Thị' (embed/chat text)
+        hoặc 'Kênh Discord' (# tên-kênh ở thanh sidebar bên trái).
         
         Quy tắc lọc thông minh:
-        1. Loại trừ các khối chữ chứa từ khóa của tiêu đề tin nhắn (ví dụ: 'lich luyen', 'hoan tat', 'tong phan thuong').
-        2. Kiểm tra độ dài: Nút bấm chỉ là nhãn ngắn (1-3 từ), không phải câu văn dài.
-        3. Ưu tiên nút ở dưới cùng (bottom-up): Trên Discord, các nút bấm component luôn nằm ở đáy tin nhắn.
+        1. Bỏ qua hoàn toàn tên kênh Discord (bắt đầu bằng '#' hoặc chứa '#').
+        2. Bỏ qua thanh sidebar danh sách server và kênh Discord ở mép trái màn hình (x < min_x).
+        3. Loại trừ các khối chữ chứa từ khóa của tiêu đề/nội dung tin nhắn và tên kênh phổ biến (ví dụ: 'lich luyen', 'hoan tat', 'luan dao', 'van dap').
+        4. Kiểm tra độ dài: Nút bấm chỉ là nhãn ngắn (1-3 từ), không phải câu văn dài.
+        5. Ưu tiên nút ở dưới cùng (bottom-up): Trên Discord, các nút bấm component luôn nằm ở đáy tin nhắn.
         """
         if isinstance(keywords, str):
             keywords = [keywords]
@@ -188,7 +191,8 @@ class VisionManager:
         default_excludes = [
             "lich", "luyen", "hoan tat", "ket qua", "thong bao", 
             "doi thu", "da thuc hien", "the luc", "tong phan thuong", 
-            "sinh menh", "diem tinh thong", "tu vi", "chien thang"
+            "sinh menh", "diem tinh thong", "tu vi", "chien thang",
+            "luan dao", "van dap", "kenh chat", "chat tong", "bot lenh", "quy dinh"
         ]
         if exclude_words is None:
             exclude_words = default_excludes
@@ -198,8 +202,18 @@ class VisionManager:
         candidates = []
         for item in detected_items:
             t = item["text_norm"]
+            raw = item.get("text_raw", "").strip()
+            cx, cy = item.get("center", (0, 0))
+
+            # 1. Bỏ qua nếu là tên kênh chat Discord (chứa ký tự '#')
+            if "#" in raw:
+                continue
+
+            # 2. Bỏ qua nếu vị trí nằm ở thanh điều hướng kênh bên trái Discord (x < min_x)
+            if min_x > 0 and cx < min_x:
+                continue
             
-            # 1. Bỏ qua nếu là câu văn/nội dung tin nhắn
+            # 3. Bỏ qua nếu là câu văn/nội dung tin nhắn hoặc kênh chat
             if any(ex in t for ex in exclude_words):
                 continue
             

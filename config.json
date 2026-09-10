@@ -19,7 +19,7 @@
     ],
     "fast_10x": {
         "scan_interval": 0.5,
-        "keywords": ["nhanh x10", "nhanhx10", "nhanh"],
+        "keywords": ["nhanh x10", "nhanhx10", "nhanh 10"],
         "delay_after_click": 1.2
     },
     "action_keywords": {

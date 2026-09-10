@@ -140,8 +140,9 @@ class DungeonController:
         if not detected_items:
             return None, None, None, None
 
-        # 1. Kiểm tra thông báo lỗi Discord (Tương tác không thành công, hết thể lực,...)
-        center, score, text_raw = self.vision.find_matching_text(detected_items, self.error_keywords)
+        # 1. Kiểm tra thông báo lỗi Discord (chỉ xét trong vùng chat x >= 280, bỏ qua thanh kênh sidebar)
+        chat_items = [it for it in detected_items if it.get("center", (0, 0))[0] >= 280 and "#" not in it.get("text_raw", "")]
+        center, score, text_raw = self.vision.find_matching_text(chat_items, self.error_keywords)
         if center:
             return ("ERROR", center, f"Lỗi Discord: {text_raw}", text_raw)
 
@@ -339,7 +340,7 @@ class Fast10xController:
         
         fast_cfg = config.get("fast_10x", {})
         self.scan_interval = fast_cfg.get("scan_interval", 0.5)
-        self.keywords = fast_cfg.get("keywords", ["nhanh x10", "nhanhx10", "nhanh 10", "nhanh"])
+        self.keywords = fast_cfg.get("keywords", ["nhanh x10", "nhanhx10", "nhanh 10"])
         self.delay_after_click = fast_cfg.get("delay_after_click", 1.2)
         
         self.stop_hotkey = config.get("stop_hotkey", "q")
@@ -347,7 +348,6 @@ class Fast10xController:
         self.anti_hover = config.get("anti_hover", True)
         self.enable_auto_scroll = config.get("enable_auto_scroll", False)
         self.auto_scroll_after_seconds = config.get("auto_scroll_after_seconds", 15.0)
-        self.error_keywords = config.get("error_keywords", DEFAULT_ERROR_KEYWORDS)
 
     def sleep_check(self, seconds, step=0.1):
         elapsed = 0.0
@@ -360,7 +360,7 @@ class Fast10xController:
         print("\n" + "="*60)
         print("⚡ [CHỨC NĂNG 2] BẮT ĐẦU AUTO CLICK 'NHANH X10' (TĂNG TỐC CHIẾN ĐẤU)")
         print(f"👉 Từ khóa nút: {self.keywords}")
-        print(f"🛡️ Phân biệt nút bấm: Tự động bỏ qua tiêu đề/văn bản embed thông báo kết quả")
+        print(f"🛡️ Phân biệt nút bấm: Tự động bỏ qua thanh kênh sidebar (#) và tiêu đề kết quả")
         print(f"👉 Dừng tool: Bấm nút đỏ '🛑 DỪNG TOOL' trên màn hình hoặc nhấn phím 'q' / 'ESC'.")
         print("="*60 + "\n")
         
@@ -394,20 +394,13 @@ class Fast10xController:
                 detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
 
                 if detected_items:
-                    # 1. Kiểm tra nếu có bảng lỗi Discord
-                    err_pos, err_score, err_text = self.vision.find_matching_text(detected_items, self.error_keywords)
-                    if err_pos:
-                        print(f"⚠️ Phát hiện bảng lỗi Discord: '{err_text}'. Đang click tắt lỗi...")
-                        self.clicker.move_and_click(err_pos[0], err_pos[1], human_like=True, move_away=self.anti_hover)
-                        self.sleep_check(1.5)
-                        continue
-
-                    # 2. Tìm nút Nhanh x10 (sử dụng find_matching_button để lọc bỏ tiêu đề embed)
+                    # Tìm nút Nhanh x10 (tự động loại trừ thanh kênh bên trái x < 280 và ký tự '#')
                     pos, score, text_raw = self.vision.find_matching_button(
                         detected_items, 
                         self.keywords,
-                        exclude_words=["lich", "luyen", "hoan tat", "ket qua", "thong bao", "doi thu", "da thuc hien", "the luc", "tong phan thuong"],
-                        prioritize_bottom=True
+                        exclude_words=["lich", "luyen", "hoan tat", "ket qua", "thong bao", "doi thu", "da thuc hien", "the luc", "tong phan thuong", "luan dao", "van dap"],
+                        prioritize_bottom=True,
+                        min_x=280
                     )
                     if pos:
                         click_count += 1
@@ -508,19 +501,12 @@ class CustomButtonController:
                 detected_items = self.vision.scan_screen_text(min_score=self.ocr_min_score)
 
                 if detected_items:
-                    # 1. Kiểm tra nếu có bảng lỗi Discord
-                    err_pos, err_score, err_text = self.vision.find_matching_text(detected_items, self.error_keywords)
-                    if err_pos:
-                        print(f"⚠️ Phát hiện bảng lỗi Discord: '{err_text}'. Đang click tắt lỗi...")
-                        self.clicker.move_and_click(err_pos[0], err_pos[1], human_like=True, move_away=self.anti_hover)
-                        self.sleep_check(1.5)
-                        continue
-
-                    # 2. Tìm nút theo chữ người dùng nhập
+                    # Tìm nút theo chữ người dùng nhập (tự động loại trừ thanh kênh bên trái x < 280 và ký tự '#')
                     pos, score, text_raw = self.vision.find_matching_button(
                         detected_items, 
                         [self.button_text],
-                        prioritize_bottom=True
+                        prioritize_bottom=True,
+                        min_x=280
                     )
                     if pos:
                         click_count += 1
